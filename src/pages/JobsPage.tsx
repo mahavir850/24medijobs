@@ -17,7 +17,7 @@ const allJobs = [
   { id: 12, title: 'MRI Technologist', hospital: 'Kokilaben Hospital', location: 'Mumbai', type: 'Full-time', salary: '₹35K–₹55K/mo', exp: '3+ yrs', specialty: 'Radiology', logo: '🏦', posted: '4 days ago' },
 ]
 
-const specialtyFilters = ['All', 'Doctors', 'Nurses', 'Pharmacy', 'Radiology', 'Allied', 'Lab', 'Dental']
+const specialtyFilters = ['All']
 const locationFilters = ['All India', 'Delhi NCR', 'Mumbai', 'Bangalore', 'Chennai', 'Hyderabad', 'Pune', 'Kolkata']
 
 interface JobsPageProps {
