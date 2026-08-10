@@ -168,8 +168,7 @@ export default function JobCategories({ onNavigate }: JobCategoriesProps) {
               <h3 className="font-bold text-[#0d1b3e] text-sm sm:text-base mb-1 group-hover:text-[#0d2b6b]">
                 {cat.title}
               </h3>
-              <p className="text-[#00b4a0] text-xs font-semibold mb-3">{cat.count}</p>
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1 mt-3">
                 {cat.sub.slice(0, 2).map((s) => (
                   <span key={s} className="text-[10px] text-[#5a6a8a] bg-white/70 px-2 py-0.5 rounded-full">
                     {s}

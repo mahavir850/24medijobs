@@ -41,7 +41,7 @@ export default function Navbar({
     { label: 'Home', page: 'home' },
     { label: 'Find Jobs', page: 'jobs' },
     { label: 'Categories', page: 'categories' },
-    { label: 'Post a Job', page: 'employers' },
+    ...(!employerProfile ? [{ label: 'Post a Job', page: 'employers' }] : []),
     { label: 'About', page: 'about' },
   ]
 
@@ -93,7 +93,7 @@ export default function Navbar({
     return (
       <div className="flex items-center gap-3">
         <button
-          onClick={() => onNavigate('login')}
+          onClick={() => onNavigate('employers')}
           className={`text-sm font-semibold px-5 py-2.5 rounded-lg transition-all duration-200 border ${
             scrolled
               ? 'border-[#0d2b6b] text-[#0d2b6b] hover:bg-[#0d2b6b] hover:text-white'
@@ -103,7 +103,7 @@ export default function Navbar({
           Employer Login
         </button>
         <button
-          onClick={() => onNavigate('register')}
+          onClick={() => onNavigate('employers')}
           className="text-sm font-semibold px-5 py-2.5 rounded-lg bg-[#00b4a0] text-white hover:bg-[#009888] transition-all duration-200 shadow-md hover:shadow-lg"
         >
           Post a Job
@@ -168,13 +168,13 @@ export default function Navbar({
     return (
       <div className="flex gap-3 pt-2">
         <button
-          onClick={() => { onNavigate('login'); setMobileOpen(false) }}
+          onClick={() => { onNavigate('employers'); setMobileOpen(false) }}
           className="flex-1 text-sm font-semibold px-4 py-2.5 rounded-lg border border-[#0d2b6b] text-[#0d2b6b]"
         >
           Employer Login
         </button>
         <button
-          onClick={() => { onNavigate('register'); setMobileOpen(false) }}
+          onClick={() => { onNavigate('employers'); setMobileOpen(false) }}
           className="flex-1 text-sm font-semibold px-4 py-2.5 rounded-lg bg-[#00b4a0] text-white"
         >
           Post a Job

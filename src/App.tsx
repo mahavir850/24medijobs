@@ -31,13 +31,15 @@ function HomePage({ onNavigate, jobs, setJobs, employerProfile, setEmployerProfi
       <Stats />
       <HowItWorks />
       <Testimonials />
-      <EmployerCTA 
-        onNavigate={onNavigate} 
-        jobs={jobs} 
-        setJobs={setJobs} 
-        employerProfile={employerProfile} 
-        setEmployerProfile={setEmployerProfile} 
-      />
+      {!employerProfile && (
+        <EmployerCTA 
+          onNavigate={onNavigate} 
+          jobs={jobs} 
+          setJobs={setJobs} 
+          employerProfile={employerProfile} 
+          setEmployerProfile={setEmployerProfile} 
+        />
+      )}
     </>
   )
 }

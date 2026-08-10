@@ -1370,9 +1370,17 @@ export default function EmployerCTA({
   setEmployerProfile 
 }: EmployerCTAProps) {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const [currentPage, setCurrentPage] = useState<'home' | 'login' | 'profile-setup' | 'job-details' | 'location' | 'compensation' | 'requirements' | 'interviewer' | 'preview' | 'publish'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'login' | 'profile-setup' | 'job-details' | 'location' | 'compensation' | 'requirements' | 'interviewer' | 'preview' | 'publish'>(employerProfile ? 'home' : 'login');
   const [jobData, setJobData] = useState<any>({});
   const [tempEmployerPhone, setTempEmployerPhone] = useState('');
+
+  useEffect(() => {
+    if (!employerProfile) {
+      setCurrentPage('login');
+    } else if (currentPage === 'login') {
+      setCurrentPage('home');
+    }
+  }, [employerProfile]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -1414,6 +1422,7 @@ export default function EmployerCTA({
         };
         setEmployerProfile(mappedProfile);
         setCurrentPage('home');
+        onNavigate('jobs');
       } else {
         if (error) console.error('Error fetching employer profile:', error);
         setCurrentPage('profile-setup');
@@ -1513,6 +1522,7 @@ export default function EmployerCTA({
               }
               setEmployerProfile(fullProfile);
               setCurrentPage('home');
+              onNavigate('jobs');
             }} 
             onBack={() => setCurrentPage('home')} 
           />

@@ -131,19 +131,7 @@ export default function Hero({ onNavigate }: HeroProps) {
                 </button>
               </div>
 
-              {/* Quick tags */}
-              <div className="flex flex-wrap gap-2 mt-3 px-1">
-                <span className="text-xs text-gray-500">Popular:</span>
-                {['MBBS Doctor', 'Staff Nurse', 'Pharmacist', 'Lab Tech', 'Radiologist'].map((tag) => (
-                  <button
-                    key={tag}
-                    onClick={() => { setSearchQuery(tag); onNavigate('jobs') }}
-                    className="text-xs text-[#0d2b6b] bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-full transition-colors duration-150 font-medium"
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
+              {/* Search box search tags removed */}
             </div>
           </div>
 
