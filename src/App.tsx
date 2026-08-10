@@ -81,8 +81,7 @@ function CategoriesPage({ onNavigate }: { onNavigate: (page: string) => void }) 
             >
               <div className="text-4xl mb-3">{cat.icon}</div>
               <h3 className="font-bold text-[#0d1b3e] mb-1 group-hover:text-[#00b4a0] transition-colors">{cat.title}</h3>
-              <p className="text-[#00b4a0] text-sm font-semibold mb-3">{cat.count} Jobs</p>
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1 mt-3">
                 {cat.sub.slice(0, 3).map((s) => (
                   <span key={s} className="text-[11px] text-[#5a6a8a] bg-[#f0f5ff] px-2 py-0.5 rounded-full">{s}</span>
                 ))}
