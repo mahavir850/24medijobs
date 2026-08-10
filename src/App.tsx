@@ -13,6 +13,7 @@ import AboutPage from './pages/AboutPage'
 import ProfilePage from './pages/ProfilePage'
 import LogoBadge from './components/LogoBadge'
 import { supabase } from './supabaseClient'
+import AdminPanel from './components/AdminPanel'
 
 interface HomePageProps {
   onNavigate: (page: string) => void
@@ -506,6 +507,7 @@ export default function App() {
       />
       <main>{renderPage()}</main>
       {!noFooterPages.includes(page) && <Footer onNavigate={navigate} />}
+      <AdminPanel onNavigate={navigate} />
     </div>
   )
 }
