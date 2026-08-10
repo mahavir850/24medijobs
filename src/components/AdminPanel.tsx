@@ -154,12 +154,12 @@ export default function AdminPanel({ onNavigate }: AdminPanelProps) {
 
   return (
     <>
-      {/* Floating admin panel button bottom left */}
+      {/* Floating admin panel text trigger bottom left */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 left-4 z-50 bg-[#0d2b6b] hover:bg-[#00b4a0] text-white py-3 px-4 rounded-xl shadow-lg border border-white/20 hover:scale-105 transition-all duration-200 flex items-center gap-2 text-xs font-bold uppercase tracking-wider"
+        className="fixed bottom-3 left-4 z-50 text-[10px] text-gray-400 hover:text-[#00b4a0] font-bold uppercase tracking-widest transition-colors duration-150 cursor-pointer"
       >
-        <span>🛡️</span> Admin Panel
+        Admin Panel
       </button>
 
       {isOpen && (
