@@ -708,601 +708,722 @@ const EmployerDashboard = ({
   );
 };
 
-// ===================== JOB DETAILS COMPONENT =====================
-const JobDetails = ({ onNext, onBack, profile }: { onNext: (data: any) => void; onBack: () => void; profile: any }) => {
-  const [formData, setFormData] = useState({
-    company: profile ? profile.businessName : 'flutter tech',
-    jobTitle: 'Senior Resident Physician',
-    jobRoleCategory: 'Doctors',
-    jobType: 'fulltime' as 'fulltime' | 'parttime' | 'both',
-  });
+// ===================== JOB POSTING WIZARD COMPONENT =====================
+interface JobPostingWizardProps {
+  profile: any;
+  onPublish: (jobObj: any) => void;
+  onCancel: () => void;
+}
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onNext(formData);
-  };
+const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProps) => {
+  const [step, setStep] = useState(0); // 0: Details, 1: Preferences, 2: Screening, 3: Description, 4: Communication
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
+  const [emailForVerification, setEmailForVerification] = useState(profile?.email || 'hr@digiphlox.com');
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="mb-8">
-          <div className="flex items-center gap-2">
-            <div className="flex-1"><div className="h-2 bg-[#00b4a0] rounded-full" style={{ width: '30%' }} /></div>
-            <span className="text-sm text-gray-500 font-medium">Step 2 of 7</span>
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-[#0d1b3e] mb-2">Job Details</h2>
-          <p className="text-gray-500 text-sm mb-6">
-            We use this information to find the best candidates for the job.
-            <span className="text-red-500 ml-1">*Marked fields are mandatory</span>
-          </p>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="bg-gray-50 p-4 rounded-xl">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">Hiring Organization</p>
-                  <p className="font-semibold text-[#0d1b3e]">{formData.company} (Verified Profile)</p>
-                </div>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Company/Hospital you're hiring for <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                value={formData.company}
-                onChange={(e) => setFormData(prev => ({ ...prev, company: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-[#00b4a0] transition-colors outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Job title / Designation <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                value={formData.jobTitle}
-                onChange={(e) => setFormData(prev => ({ ...prev, jobTitle: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-[#00b4a0] transition-colors outline-none"
-              />
-              <p className="text-xs text-gray-400 mt-1">Only similar job title edits are allowed after publishing</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Job Role / Category <span className="text-red-500">*</span></label>
-              <select
-                value={formData.jobRoleCategory}
-                onChange={(e) => setFormData(prev => ({ ...prev, jobRoleCategory: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-[#00b4a0] transition-colors outline-none text-gray-600"
-              >
-                <option value="Doctors">Doctors & Physicians</option>
-                <option value="Nurses">Nursing Staff</option>
-                <option value="Pharmacy">Pharmacy</option>
-                <option value="Radiology">Radiology & Imaging</option>
-                <option value="Dental">Dental</option>
-                <option value="Lab">Lab & Diagnostics</option>
-                <option value="Allied">Allied Health & Therapy</option>
-                <option value="Mental Health">Mental Health</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Type of Job <span className="text-red-500">*</span></label>
-              <div className="grid grid-cols-3 gap-3">
-                {['fulltime', 'parttime', 'both'].map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, jobType: type as any }))}
-                    className={`py-3 px-4 rounded-xl border-2 text-sm font-medium transition-all ${
-                      formData.jobType === type ? 'border-[#00b4a0] bg-[#00b4a0]/5 text-[#00b4a0]' : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                    }`}
-                  >
-                    {type === 'fulltime' ? 'Full Time' : type === 'parttime' ? 'Part Time' : 'Both'}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="flex gap-3 pt-4 border-t border-gray-100">
-              <button type="button" onClick={onBack} className="flex-1 px-6 py-3 border border-gray-300 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors">Back</button>
-              <button type="submit" className="flex-1 px-6 py-3 bg-[#00b4a0] hover:bg-[#009888] text-white rounded-xl font-semibold transition-colors">Continue</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-};
+  // Form states
+  const [postingAs, setPostingAs] = useState<'company' | 'consultancy'>('company');
+  const [companyName, setCompanyName] = useState(profile?.businessName || 'DigiPhlox');
+  const [jobTitle, setJobTitle] = useState('');
+  const [minExp, setMinExp] = useState('Min exp.');
+  const [maxExp, setMaxExp] = useState('Max exp.');
+  const [freshersApply, setFreshersApply] = useState(false);
+  const [minSalary, setMinSalary] = useState('');
+  const [maxSalary, setMaxSalary] = useState('');
+  const [selectedPerks, setSelectedPerks] = useState<string[]>([]);
+  
+  const [department, setDepartment] = useState('Ex. Sales & Marketing');
+  const [jobLocation, setJobLocation] = useState('');
+  const [qualification, setQualification] = useState('Graduate'); // '12th Pass' | 'Diploma' | 'Graduate' | 'Post-Graduate'
+  const [gender, setGender] = useState('Any'); // 'Any' | 'Male' | 'Female'
+  const [skills, setSkills] = useState('');
 
-// ===================== LOCATION COMPONENT =====================
-const Location = ({ onNext, onBack }: { onNext: (data: any) => void; onBack: () => void }) => {
-  const [formData, setFormData] = useState({
-    workLocationType: 'office' as 'office' | 'work_from_home' | 'hybrid',
-    jobCity: 'Delhi-NCR',
-  });
+  const [questions, setQuestions] = useState<string[]>([]);
+  const [customQuestion, setCustomQuestion] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onNext(formData);
-  };
+  const defaultTemplate = `Responsibilities:
+* Collaborate with cross-functional teams on campaigns & initiatives
+* Analyze performance metrics, optimize strategies
+* Manage social media presence & create engaging content`;
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="mb-8">
-          <div className="flex items-center gap-2">
-            <div className="flex-1"><div className="h-2 bg-[#00b4a0] rounded-full" style={{ width: '50%' }} /></div>
-            <span className="text-sm text-gray-500 font-medium">Step 3 of 7</span>
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-[#0d1b3e] mb-2">Location</h2>
-          <p className="text-gray-500 text-sm mb-6">Let candidates know where they will be working from.</p>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Work location type <span className="text-red-500">*</span></label>
-              <div className="grid grid-cols-3 gap-3">
-                {['office', 'work_from_home', 'hybrid'].map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, workLocationType: type as any }))}
-                    className={`py-3 px-4 rounded-xl border-2 text-sm font-medium transition-all ${
-                      formData.workLocationType === type ? 'border-[#00b4a0] bg-[#00b4a0]/5 text-[#00b4a0]' : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                    }`}
-                  >
-                    {type === 'office' ? 'Hospital / Clinic' : type === 'work_from_home' ? 'Work from Home' : 'Hybrid'}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Job City <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                value={formData.jobCity}
-                onChange={(e) => setFormData(prev => ({ ...prev, jobCity: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-[#00b4a0] transition-colors outline-none"
-              />
-              <p className="text-xs text-gray-400 mt-2">Your job will receive applications matching your city or region.</p>
-            </div>
-            <div className="flex gap-3 pt-4 border-t border-gray-100">
-              <button type="button" onClick={onBack} className="flex-1 px-6 py-3 border border-gray-300 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors">Back</button>
-              <button type="submit" className="flex-1 px-6 py-3 bg-[#00b4a0] hover:bg-[#009888] text-white rounded-xl font-semibold transition-colors">Continue</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-};
+  const [jobDescription, setJobDescription] = useState(defaultTemplate);
+  const [companyAbout, setCompanyAbout] = useState('');
 
-// ===================== COMPENSATION COMPONENT =====================
-const Compensation = ({ onNext, onBack }: { onNext: (data: any) => void; onBack: () => void }) => {
-  const [formData, setFormData] = useState({
-    payType: 'fixed' as 'fixed' | 'incentive' | 'both',
-    minSalary: '60000',
-    maxSalary: '120000',
-    averageIncentive: '0',
-    additionalPerks: [] as string[],
-    joiningFee: 'no' as 'yes' | 'no',
-  });
-  const [customPerk, setCustomPerk] = useState('');
+  const [receiveMethod, setReceiveMethod] = useState<'email' | 'whatsapp'>('email');
+  const [recruiterEmail, setRecruiterEmail] = useState(profile?.email || 'hr@digiphlox.com');
+  const [recruiterPhone, setRecruiterPhone] = useState(profile?.phone || '9876543210');
 
-  const handleAddPerk = () => {
-    if (customPerk && !formData.additionalPerks.includes(customPerk)) {
-      setFormData(prev => ({ ...prev, additionalPerks: [...prev.additionalPerks, customPerk] }));
-      setCustomPerk('');
+  const perksSuggestions = ['Office cab', 'Health insurance', 'Flexible hours', 'Free meals', 'PF Contribution', 'Performance Bonus'];
+  const screeningSuggestions = [
+    "What's your current salary?",
+    "What's your expected salary?",
+    "What's your notice period?",
+    "Are you comfortable with English?",
+    "What kind of job are you comfortable with?",
+    "Are you willing to attend in-person interview?"
+  ];
+
+  const handleNext = () => {
+    if (step === 0) {
+      if (!jobTitle.trim()) {
+        alert('Please enter a Job Title to continue.');
+        return;
+      }
+      setShowOtpModal(true); // Trigger verification modal before step 1
+    } else {
+      setStep(prev => Math.min(prev + 1, 4));
     }
   };
 
-  const handleRemovePerk = (perk: string) => {
-    setFormData(prev => ({ ...prev, additionalPerks: prev.additionalPerks.filter(p => p !== perk) }));
+  const handleBack = () => {
+    setStep(prev => Math.max(prev - 1, 0));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onNext(formData);
+  const handleOtpVerifySubmit = () => {
+    setShowOtpModal(false);
+    setStep(1); // Proceed to Candidate preferences step
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="mb-8">
-          <div className="flex items-center gap-2">
-            <div className="flex-1"><div className="h-2 bg-[#00b4a0] rounded-full" style={{ width: '60%' }} /></div>
-            <span className="text-sm text-gray-500 font-medium">Step 4 of 7</span>
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-[#0d1b3e] mb-2">Compensation</h2>
-          <p className="text-gray-500 text-sm mb-6">Job postings with right salary & incentives will help you find the right candidates.</p>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">What is the pay type? <span className="text-red-500">*</span></label>
-              <div className="grid grid-cols-3 gap-3">
-                {['fixed', 'incentive', 'both'].map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, payType: type as any }))}
-                    className={`py-3 px-4 rounded-xl border-2 text-sm font-medium transition-all ${
-                      formData.payType === type ? 'border-[#00b4a0] bg-[#00b4a0]/5 text-[#00b4a0]' : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                    }`}
-                  >
-                    {type === 'fixed' ? 'Fixed Salary' : type === 'incentive' ? 'Incentive' : 'Fixed + Incentive'}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Fixed salary / month <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  value={formData.minSalary}
-                  onChange={(e) => setFormData(prev => ({ ...prev, minSalary: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-[#00b4a0] transition-colors outline-none"
-                  placeholder="₹0"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">to</label>
-                <input
-                  type="text"
-                  value={formData.maxSalary}
-                  onChange={(e) => setFormData(prev => ({ ...prev, maxSalary: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-[#00b4a0] transition-colors"
-                  placeholder="₹0"
-                />
-              </div>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-xl space-y-1">
-              <p className="text-sm text-gray-600"><span className="font-medium">Fixed Salary / Month</span> ₹ {formData.minSalary} - ₹ {formData.maxSalary}</p>
-              <p className="text-sm text-gray-600"><span className="font-medium">Average Incentive / Month</span> ₹ {formData.averageIncentive}</p>
-              <p className="text-sm text-[#00b4a0] font-medium">Earning Potential / Month ₹ {formData.minSalary} - ₹ {formData.maxSalary}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Do you offer any additional perks?</label>
-              <div className="flex gap-2 mb-3">
-                <input
-                  type="text"
-                  value={customPerk}
-                  onChange={(e) => setCustomPerk(e.target.value)}
-                  placeholder="Add other perks"
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:border-[#00b4a0] transition-colors outline-none"
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddPerk()}
-                />
-                <button type="button" onClick={handleAddPerk} className="px-4 py-2 border border-[#00b4a0] text-[#00b4a0] rounded-xl hover:bg-[#00b4a0]/5 transition-colors">+ Add</button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {formData.additionalPerks.map(perk => (
-                  <span key={perk} className="inline-flex items-center gap-1 px-3 py-1 bg-[#00b4a0]/10 text-[#00b4a0] rounded-full text-sm">
-                    {perk}
-                    <button type="button" onClick={() => handleRemovePerk(perk)} className="hover:text-red-500">×</button>
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Is there any joining fee or deposit required from the candidate? <span className="text-red-500">*</span></label>
-              <div className="flex gap-4">
-                {['no', 'yes'].map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, joiningFee: option as any }))}
-                    className={`px-6 py-2 rounded-xl border-2 text-sm font-medium transition-all ${
-                      formData.joiningFee === option ? 'border-[#00b4a0] bg-[#00b4a0]/5 text-[#00b4a0]' : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                    }`}
-                  >
-                    {option === 'no' ? 'No' : 'Yes'}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="flex gap-3 pt-4 border-t border-gray-100">
-              <button type="button" onClick={onBack} className="flex-1 px-6 py-3 border border-gray-300 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors">Back</button>
-              <button type="submit" className="flex-1 px-6 py-3 bg-[#00b4a0] hover:bg-[#009888] text-white rounded-xl font-semibold transition-colors">Continue</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ===================== CANDIDATE REQUIREMENTS COMPONENT =====================
-const CandidateRequirements = ({ onNext, onBack }: { onNext: (data: any) => void; onBack: () => void }) => {
-  const [formData, setFormData] = useState({
-    minEducation: 'Graduate',
-    englishLevel: 'Good English',
-    experienceRequired: 'Experienced Only',
-    minExperience: '2+',
-    additionalRequirements: '',
-    gender: 'both' as 'male' | 'female' | 'both',
-    jobDescription: '',
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onNext(formData);
+  const handleAddPerk = (perk: string) => {
+    if (selectedPerks.includes(perk)) {
+      setSelectedPerks(prev => prev.filter(p => p !== perk));
+    } else {
+      setSelectedPerks(prev => [...prev, perk]);
+    }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="mb-8">
-          <div className="flex items-center gap-2">
-            <div className="flex-1"><div className="h-2 bg-[#00b4a0] rounded-full" style={{ width: '80%' }} /></div>
-            <span className="text-sm text-gray-500 font-medium">Step 5 of 7</span>
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-[#0d1b3e] mb-2">Candidate Requirements</h2>
-          <p className="text-gray-500 text-sm mb-6">We'll use these requirement details to make your job visible to the right candidates.</p>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Education <span className="text-red-500">*</span></label>
-              <select
-                value={formData.minEducation}
-                onChange={(e) => setFormData(prev => ({ ...prev, minEducation: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-[#00b4a0] transition-colors outline-none text-gray-600"
-              >
-                <option>Graduate</option><option>Post Graduate</option><option>Diploma</option><option>High School</option><option>No Formal Education</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">English level required <span className="text-red-500">*</span></label>
-              <select
-                value={formData.englishLevel}
-                onChange={(e) => setFormData(prev => ({ ...prev, englishLevel: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-[#00b4a0] transition-colors outline-none text-gray-600"
-              >
-                <option>Basic English</option><option>Good English</option><option>Fluent English</option><option>Native English</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Total experience required <span className="text-red-500">*</span></label>
-              <select
-                value={formData.experienceRequired}
-                onChange={(e) => setFormData(prev => ({ ...prev, experienceRequired: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-[#00b4a0] transition-colors outline-none text-gray-600"
-              >
-                <option>Fresher Only</option><option>Experienced Only</option><option>Both</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Minimum experience <span className="text-red-500">*</span></label>
-              <select
-                value={formData.minExperience}
-                onChange={(e) => setFormData(prev => ({ ...prev, minExperience: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-[#00b4a0] transition-colors outline-none text-gray-600"
-              >
-                <option>0</option><option>1+</option><option>2+</option><option>3+</option><option>5+</option><option>10+</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Additional Requirements (Optional)</label>
-              <textarea
-                value={formData.additionalRequirements}
-                onChange={(e) => setFormData(prev => ({ ...prev, additionalRequirements: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-[#00b4a0] transition-colors h-20 resize-none outline-none"
-                placeholder="Add additional requirements..."
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
-              <div className="flex gap-4">
-                {['both', 'male', 'female'].map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, gender: option as any }))}
-                    className={`px-6 py-2 rounded-xl border-2 text-sm font-medium transition-all ${
-                      formData.gender === option ? 'border-[#00b4a0] bg-[#00b4a0]/5 text-[#00b4a0]' : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                    }`}
-                  >
-                    {option === 'both' ? 'Both' : option === 'male' ? 'Male' : 'Female'}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Job Description</label>
-              <textarea
-                value={formData.jobDescription}
-                onChange={(e) => setFormData(prev => ({ ...prev, jobDescription: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-[#00b4a0] transition-colors h-32 resize-none outline-none"
-                placeholder="Describe the responsibilities of this job..."
-              />
-            </div>
-            <div className="flex gap-3 pt-4 border-t border-gray-100">
-              <button type="button" onClick={onBack} className="flex-1 px-6 py-3 border border-gray-300 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors">Back</button>
-              <button type="submit" className="flex-1 px-6 py-3 bg-[#00b4a0] hover:bg-[#009888] text-white rounded-xl font-semibold transition-colors">Continue</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ===================== INTERVIEWER INFO COMPONENT =====================
-const InterviewerInfo = ({ onNext, onBack }: { onNext: (data: any) => void; onBack: () => void }) => {
-  const [formData, setFormData] = useState({
-    isWalkIn: 'no' as 'yes' | 'no',
-    address: 'Buddh Marg, Fraser Road Area, Patna, Bihar 800001, India',
-    contactPreference: 'myself' as 'myself' | 'other' | 'none',
-    candidateContact: 'all' as 'all' | 'high_medium' | 'high',
-    notificationPreference: 'myself' as 'myself' | 'daily',
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onNext(formData);
+  const handleAddSuggestedQuestion = (q: string) => {
+    if (!questions.includes(q)) {
+      setQuestions(prev => [...prev, q]);
+    }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="mb-8">
-          <div className="flex items-center gap-2">
-            <div className="flex-1"><div className="h-2 bg-[#00b4a0] rounded-full w-full" /></div>
-            <span className="text-sm text-gray-500 font-medium">Step 6 of 7</span>
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-[#0d1b3e] mb-2">Interviewer Information</h2>
-          <p className="text-gray-500 text-sm mb-6">Let candidates know how the interview will be conducted for this job.</p>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Is this a walk-in interview? <span className="text-red-500">*</span></label>
-              <div className="flex gap-4">
-                {['yes', 'no'].map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, isWalkIn: option as any }))}
-                    className={`px-6 py-2 rounded-xl border-2 text-sm font-medium transition-all ${
-                      formData.isWalkIn === option ? 'border-[#00b4a0] bg-[#00b4a0]/5 text-[#00b4a0]' : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                    }`}
-                  >
-                    {option === 'yes' ? 'Yes' : 'No'}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Company address <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                value={formData.address}
-                onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-[#00b4a0] transition-colors outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Do you want candidates to contact you via Call / Whatsapp after they apply? <span className="text-red-500">*</span></label>
-              <div className="flex flex-wrap gap-3">
-                {['myself', 'other', 'none'].map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, contactPreference: option as any }))}
-                    className={`px-4 py-2 rounded-xl border-2 text-sm font-medium transition-all ${
-                      formData.contactPreference === option ? 'border-[#00b4a0] bg-[#00b4a0]/5 text-[#00b4a0]' : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                    }`}
-                  >
-                    {option === 'myself' ? 'Yes, to myself' : option === 'other' ? 'Yes, to other recruiter' : 'No, I will contact candidates first'}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Which candidates should be able to contact you? <span className="text-red-500">*</span></label>
-              <div className="flex flex-wrap gap-3">
-                {['all', 'high_medium', 'high'].map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, candidateContact: option as any }))}
-                    className={`px-4 py-2 rounded-xl border-2 text-sm font-medium transition-all text-left ${
-                      formData.candidateContact === option ? 'border-[#00b4a0] bg-[#00b4a0]/5 text-[#00b4a0]' : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                    }`}
-                  >
-                    {option === 'all' ? 'All candidates' : option === 'high_medium' ? 'High & Medium matched candidates' : 'High Matches Only'}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Notification Preferences</label>
-              <div className="flex gap-4">
-                {['myself', 'daily'].map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, notificationPreference: option as any }))}
-                    className={`px-6 py-2 rounded-xl border-2 text-sm font-medium transition-all ${
-                      formData.notificationPreference === option ? 'border-[#00b4a0] bg-[#00b4a0]/5 text-[#00b4a0]' : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                    }`}
-                  >
-                    {option === 'myself' ? 'Yes, to myself' : 'Send summary once a day'}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="flex gap-3 pt-4 border-t border-gray-100">
-              <button type="button" onClick={onBack} className="flex-1 px-6 py-3 border border-gray-300 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors">Back</button>
-              <button type="submit" className="flex-1 px-6 py-3 bg-[#00b4a0] hover:bg-[#009888] text-white rounded-xl font-semibold transition-colors">Continue</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-};
+  const handleAddCustomQuestion = () => {
+    if (customQuestion.trim() && !questions.includes(customQuestion.trim())) {
+      setQuestions(prev => [...prev, customQuestion.trim()]);
+      setCustomQuestion('');
+    }
+  };
 
-// ===================== JOB PREVIEW COMPONENT =====================
-const JobPreview = ({ data, onNext, onBack, profile }: { data: any; onNext: () => void; onBack: () => void; profile: any }) => {
+  const handleRemoveQuestion = (index: number) => {
+    setQuestions(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handlePostJobAction = () => {
+    const salaryStr = minSalary && maxSalary ? `₹${Number(minSalary).toLocaleString('en-IN')}–₹${Number(maxSalary).toLocaleString('en-IN')}/mo` : 'Negotiable';
+    const expStr = minExp === '0 (Fresher)' ? 'Fresher' : `${minExp}–${maxExp} yrs`;
+    const typeStr = 'Full-time';
+
+    const newJobObj = {
+      title: jobTitle || 'Medical Specialist',
+      hospital: companyName || profile?.businessName || 'Verified Organization',
+      location: jobLocation || 'Delhi NCR',
+      type: typeStr,
+      salary: salaryStr,
+      exp: expStr,
+      specialty: department || 'Doctors',
+      logo: profile?.logo || '🏥',
+      posted: 'Just now',
+    };
+
+    onPublish(newJobObj);
+  };
+
+  const stepsList = [
+    { label: 'Job details', index: 0 },
+    { label: 'Candidate preferences', index: 1 },
+    { label: 'Screening questions', index: 2 },
+    { label: 'Job description', index: 3 },
+    { label: 'Communication preferences', index: 4 }
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="mb-8">
-          <div className="flex items-center gap-2">
-            <div className="flex-1"><div className="h-2 bg-[#00b4a0] rounded-full w-full" /></div>
-            <span className="text-sm text-gray-500 font-medium">Step 7 of 7</span>
+    <div className="min-h-screen bg-gray-50/50 py-10 flex justify-center items-start px-4">
+      <div className="max-w-6xl w-full bg-white rounded-3xl border border-gray-100 shadow-xl overflow-hidden grid md:grid-cols-4 min-h-[70vh]">
+        
+        {/* Left Sidebar (Progress steps) */}
+        <div className="bg-[#f8fafc] border-r border-gray-100 p-8 space-y-8 md:col-span-1 shrink-0">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[#0d1b3e] font-black text-lg tracking-wide">Post a job</span>
+            <span className="bg-[#22c36a]/15 text-[#22c36a] text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">Free</span>
           </div>
-        </div>
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-[#0d1b3e]">Job Preview</h2>
-            <button type="button" onClick={onBack} className="text-sm text-[#00b4a0] font-medium hover:underline">Edit details</button>
-          </div>
-          <div className="space-y-6">
-            {profile && (
-              <div className="border-b border-gray-100 pb-4">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Interviewer Representative</h3>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200">
-                    <img src={profile.logo} alt="Logo" className="w-full h-full object-cover" />
+
+          <div className="relative space-y-6">
+            {stepsList.map((s, idx) => {
+              const isCompleted = step > idx;
+              const isActive = step === idx;
+              return (
+                <div key={s.index} className="flex items-center gap-3.5 relative z-10">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border transition-all ${
+                    isCompleted 
+                      ? 'bg-[#22c36a] border-[#22c36a] text-white' 
+                      : isActive 
+                      ? 'bg-[#0d2b6b] border-[#0d2b6b] text-white ring-4 ring-[#0d2b6b]/10' 
+                      : 'bg-white border-gray-200 text-gray-400'
+                  }`}>
+                    {isCompleted ? '✓' : idx + 1}
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-[#0d1b3e]">{profile.name} ({profile.designation})</p>
-                    <p className="text-xs text-gray-500">{profile.email}</p>
+                  <span className={`text-xs font-black transition-colors ${
+                    isActive ? 'text-[#0d2b6b]' : isCompleted ? 'text-gray-600' : 'text-gray-400'
+                  }`}>
+                    {s.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Right content viewports */}
+        <div className="md:col-span-3 p-8 flex flex-col justify-between relative">
+          
+          <div className="space-y-6 flex-1 pb-10">
+            {/* ── STEP 0: JOB DETAILS ── */}
+            {step === 0 && (
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">You're posting this job as a:</label>
+                  <div className="flex gap-2">
+                    {['company', 'consultancy'].map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setPostingAs(type as any)}
+                        className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                          postingAs === type 
+                            ? 'bg-[#0d2b6b] text-white shadow-sm border border-[#0d2b6b]'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-500 border border-transparent'
+                        }`}
+                      >
+                        {type === 'company' ? 'Company/Business' : 'Consultancy'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Your company name</label>
+                  <input
+                    type="text"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="DigiPhlox"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Job title</label>
+                  <input
+                    type="text"
+                    required
+                    value={jobTitle}
+                    onChange={(e) => setJobTitle(e.target.value)}
+                    placeholder="Enter job title (e.g. Senior Digital Marketing Executive)"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Work experience (Years)</label>
+                  <div className="flex items-center gap-3">
+                    <select
+                      value={minExp}
+                      onChange={(e) => setMinExp(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-xs font-semibold text-gray-600 focus:outline-none outline-none focus:border-[#0d2b6b] bg-transparent"
+                    >
+                      <option value="Min exp.">Min exp.</option>
+                      <option value="0">0 (Fresher)</option>
+                      <option value="1">1 year</option>
+                      <option value="2">2 years</option>
+                      <option value="3">3 years</option>
+                      <option value="5">5 years</option>
+                      <option value="8">8+ years</option>
+                    </select>
+                    <span className="text-xs text-gray-400 font-bold uppercase">to</span>
+                    <select
+                      value={maxExp}
+                      onChange={(e) => setMaxExp(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-xs font-semibold text-gray-600 focus:outline-none outline-none focus:border-[#0d2b6b] bg-transparent"
+                    >
+                      <option value="Max exp.">Max exp.</option>
+                      <option value="1">1 year</option>
+                      <option value="2">2 years</option>
+                      <option value="3">3 years</option>
+                      <option value="5">5 years</option>
+                      <option value="10">10 years</option>
+                      <option value="15">15+ years</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2 px-1">
+                    <input
+                      type="checkbox"
+                      id="freshersApply"
+                      checked={freshersApply}
+                      onChange={(e) => setFreshersApply(e.target.checked)}
+                      className="rounded accent-[#0d2b6b] border-gray-300"
+                    />
+                    <label htmlFor="freshersApply" className="text-[11px] text-gray-500 font-semibold cursor-pointer">Freshers can also apply</label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Salary per month (₹)</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="number"
+                      value={minSalary}
+                      onChange={(e) => setMinSalary(e.target.value)}
+                      placeholder="Min"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                    />
+                    <span className="text-xs text-gray-400 font-bold uppercase">to</span>
+                    <input
+                      type="number"
+                      value={maxSalary}
+                      onChange={(e) => setMaxSalary(e.target.value)}
+                      placeholder="Max"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Perks and benefits (Optional)</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {perksSuggestions.map((perk) => {
+                      const isSelected = selectedPerks.includes(perk);
+                      return (
+                        <button
+                          key={perk}
+                          type="button"
+                          onClick={() => handleAddPerk(perk)}
+                          className={`px-3 py-1.5 rounded-full text-[10px] font-black transition-all cursor-pointer ${
+                            isSelected 
+                              ? 'bg-[#0d2b6b] text-white shadow-sm border border-[#0d2b6b]'
+                              : 'bg-[#f0f5ff] hover:bg-blue-100 text-[#0d2b6b] border border-transparent'
+                          }`}
+                        >
+                          + {perk}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
             )}
-            <div className="border-b border-gray-100 pb-4">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Job Details</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div><p className="text-xs text-gray-400">Company name</p><p className="text-sm font-medium text-[#0d1b3e]">{data?.company || 'Apollo Hospitals'}</p></div>
-                <div><p className="text-xs text-gray-400">Job title</p><p className="text-sm font-medium text-[#0d1b3e]">{data?.jobTitle || 'Resident Doctor'}</p></div>
-                <div><p className="text-xs text-gray-400">Job role/ category</p><p className="text-sm font-medium text-[#0d1b3e]">{data?.jobRoleCategory || 'Doctors'}</p></div>
-                <div><p className="text-xs text-gray-400">Job type</p><p className="text-sm font-medium text-[#0d1b3e]">{data?.jobType === 'fulltime' ? 'Full Time' : data?.jobType === 'parttime' ? 'Part Time' : 'Full / Part Time'}</p></div>
-                <div><p className="text-xs text-gray-400">Work type</p><p className="text-sm font-medium text-[#0d1b3e]">{data?.workLocationType === 'office' ? 'Hospital Site' : data?.workLocationType === 'hybrid' ? 'Hybrid' : 'Remote'}</p></div>
-                <div><p className="text-xs text-gray-400">Job City</p><p className="text-sm font-medium text-[#0d1b3e]">{data?.jobCity || 'Delhi NCR'}</p></div>
+
+            {/* ── STEP 1: CANDIDATE PREFERENCES ── */}
+            {step === 1 && (
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Department</label>
+                  <select
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-xs font-semibold text-gray-600 focus:outline-none outline-none focus:border-[#0d2b6b] bg-transparent"
+                  >
+                    <option value="Ex. Sales & Marketing">Ex. Sales & Marketing</option>
+                    <option value="Doctors">Doctors & Physicians</option>
+                    <option value="Nurses">Nursing Staff</option>
+                    <option value="Pharmacy">Pharmacy</option>
+                    <option value="Radiology">Radiology & Imaging</option>
+                    <option value="Diagnostics">Diagnostics & Lab</option>
+                  </select>
+                  <div className="flex flex-wrap gap-1.5 mt-2.5">
+                    {['Digital Marketing', 'Marketing', 'Corporate Communication'].map((dept) => (
+                      <button
+                        key={dept}
+                        type="button"
+                        onClick={() => setDepartment(dept)}
+                        className="px-3 py-1.5 rounded-full text-[10px] font-black bg-[#f0f5ff] hover:bg-blue-100 text-[#0d2b6b] cursor-pointer"
+                      >
+                        + {dept}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Job location</label>
+                  <input
+                    type="text"
+                    value={jobLocation}
+                    onChange={(e) => setJobLocation(e.target.value)}
+                    placeholder="Search and add your job location"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Candidate's qualification</label>
+                  <div className="flex flex-wrap gap-2">
+                    {['12th Pass', 'Diploma', 'Graduate', 'Post-Graduate'].map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        onClick={() => setQualification(q)}
+                        className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                          qualification === q
+                            ? 'bg-[#0d2b6b] text-white border border-[#0d2b6b]'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-500 border border-transparent'
+                        }`}
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Gender preference</label>
+                  <div className="flex gap-2">
+                    {['Any', 'Male', 'Female'].map((g) => (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => setGender(g)}
+                        className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                          gender === g
+                            ? 'bg-[#0d2b6b] text-white border border-[#0d2b6b]'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-500 border border-transparent'
+                        }`}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Add skills</label>
+                  <input
+                    type="text"
+                    value={skills}
+                    onChange={(e) => setSkills(e.target.value)}
+                    placeholder="Skills that are needed for this job"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                  />
+                </div>
               </div>
-            </div>
-            <div className="border-b border-gray-100 pb-4">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Compensation</h3>
-              <p className="text-sm font-medium text-[#0d1b3e]">₹ {Number(data?.minSalary).toLocaleString('en-IN')} - ₹ {Number(data?.maxSalary).toLocaleString('en-IN')} per month</p>
-              <p className="text-xs text-gray-500 mt-2">Joining Fee: {data?.joiningFee === 'yes' ? 'Yes (deposit required)' : 'No (direct hiring)'}</p>
-            </div>
-            <div className="border-b border-gray-100 pb-4">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Candidate Requirements</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div><p className="text-xs text-gray-400">Minimum Education</p><p className="text-sm font-medium text-[#0d1b3e]">{data?.minEducation || 'Graduate'}</p></div>
-                <div><p className="text-xs text-gray-400">Experience Required</p><p className="text-sm font-medium text-[#0d1b3e]">{data?.experienceRequired || 'Experienced Only'}</p></div>
-                <div><p className="text-xs text-gray-400">Minimum Experience</p><p className="text-sm font-medium text-[#0d1b3e]">{data?.minExperience || '2+'}</p></div>
-                <div><p className="text-xs text-gray-400">English Level</p><p className="text-sm font-medium text-[#0d1b3e]">{data?.englishLevel || 'Good English'}</p></div>
+            )}
+
+            {/* ── STEP 2: SCREENING QUESTIONS ── */}
+            {step === 2 && (
+              <div className="space-y-5">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Screening questions</span>
+                  <button
+                    onClick={handleAddCustomQuestion}
+                    className="text-xs bg-[#0d2b6b] text-white font-bold px-3 py-1.5 rounded-lg hover:bg-[#00b4a0] transition-colors cursor-pointer"
+                  >
+                    + Add a question
+                  </button>
+                </div>
+
+                <input
+                  type="text"
+                  value={customQuestion}
+                  onChange={(e) => setCustomQuestion(e.target.value)}
+                  placeholder="Enter custom screening question..."
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors mb-3"
+                />
+
+                <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100/50">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2.5">Suggested questions:</p>
+                  <div className="flex flex-col gap-2">
+                    {screeningSuggestions.map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        onClick={() => handleAddSuggestedQuestion(q)}
+                        className="text-left py-2 px-3 border border-gray-100 hover:border-gray-200 rounded-xl bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50 cursor-pointer transition-all flex items-center justify-between"
+                      >
+                        <span>+ {q}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {questions.length > 0 && (
+                  <div className="space-y-3 mt-4">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Selected questions:</p>
+                    {questions.map((q, idx) => (
+                      <div key={idx} className="bg-blue-50/30 border border-blue-100/50 rounded-xl p-3 flex justify-between items-center gap-3">
+                        <span className="text-xs font-semibold text-gray-700">{q}</span>
+                        <button
+                          onClick={() => handleRemoveQuestion(idx)}
+                          className="text-red-500 hover:text-red-700 font-bold text-xs"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
-            <div className="flex gap-3 pt-4 border-t border-gray-100">
-              <button type="button" onClick={onBack} className="flex-1 px-6 py-3 border border-gray-300 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors">Back</button>
-              <button type="button" onClick={onNext} className="flex-1 px-6 py-3 bg-[#00b4a0] hover:bg-[#009888] text-white rounded-xl font-semibold transition-colors">Continue to Publish</button>
-            </div>
+            )}
+
+            {/* ── STEP 3: JOB DESCRIPTION ── */}
+            {step === 3 && (
+              <div className="space-y-5">
+                <div className="bg-blue-50/40 border border-blue-100/60 text-[#0d2b6b] p-3.5 rounded-xl text-xs font-semibold flex gap-2">
+                  <span>💡</span>
+                  <span>Auto-generated based on your details. You can edit it as well.</span>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Job description</label>
+                    <button
+                      onClick={() => setJobDescription(defaultTemplate)}
+                      className="text-[11px] font-bold text-[#00b4a0] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      🔄 Regenerate
+                    </button>
+                  </div>
+
+                  {/* Rich Text mock toolbar */}
+                  <div className="border border-gray-200 rounded-t-xl bg-gray-50/50 p-2 flex gap-3 border-b-0">
+                    {['B', 'I', 'U', '• List', '1. List'].map((tool) => (
+                      <button
+                        key={tool}
+                        type="button"
+                        className="px-2 py-1 rounded text-xs font-bold text-gray-500 hover:bg-gray-200/50 cursor-pointer"
+                      >
+                        {tool}
+                      </button>
+                    ))}
+                  </div>
+
+                  <textarea
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                    maxLength={250}
+                    rows={6}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-b-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors bg-white resize-none"
+                  />
+                  <div className="text-right text-[10px] text-gray-400 font-bold mt-1.5">
+                    {jobDescription.length}/250
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Write something about your company (+)</label>
+                  <input
+                    type="text"
+                    value={companyAbout}
+                    onChange={(e) => setCompanyAbout(e.target.value)}
+                    placeholder="e.g. DigiPhlox is a high-growth creative agency specialized in clinical brandings."
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* ── STEP 4: COMMUNICATION PREFERENCES ── */}
+            {step === 4 && (
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">How do you want to receive applications?</label>
+                  <div className="flex gap-2">
+                    {['email', 'whatsapp'].map((method) => (
+                      <button
+                        key={method}
+                        type="button"
+                        onClick={() => setReceiveMethod(method as any)}
+                        className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                          receiveMethod === method 
+                            ? 'bg-[#0d2b6b] text-white border border-[#0d2b6b]'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-500 border border-transparent'
+                        }`}
+                      >
+                        {method === 'email' ? 'Recruiter Email' : 'WhatsApp / Phone'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {receiveMethod === 'email' ? (
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Contact email for recruiter</label>
+                    <input
+                      type="email"
+                      value={recruiterEmail}
+                      onChange={(e) => setRecruiterEmail(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Contact phone for recruiter</label>
+                    <input
+                      type="tel"
+                      value={recruiterPhone}
+                      onChange={(e) => setRecruiterPhone(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                    />
+                  </div>
+                )}
+
+                <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 mt-6">
+                  <h4 className="text-sm font-black text-[#0d1b3e] mb-2">Job Post Preview Card</h4>
+                  <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 border border-gray-100 flex items-center justify-center text-xl shrink-0">
+                      🏥
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-[#0d1b3e] text-sm">{jobTitle || 'Medical Staff Post'}</h5>
+                      <p className="text-[11px] text-gray-400 font-semibold mt-0.5">{companyName}</p>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-[#5a6a8a] mt-2 font-medium">
+                        <span>📍 {jobLocation || 'Delhi NCR'}</span>
+                        <span>⏱ Full-time</span>
+                        <span>🎓 Exp: {minExp}–{maxExp} yrs</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer Navigation Actions */}
+          <div className="flex justify-between items-center border-t border-gray-100 pt-4 shrink-0">
+            {step > 0 ? (
+              <button
+                type="button"
+                onClick={handleBack}
+                className="border border-gray-300 text-gray-600 font-bold px-6 py-2.5 rounded-xl hover:bg-gray-50 text-xs transition-colors cursor-pointer"
+              >
+                Back
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onCancel}
+                className="text-gray-400 hover:text-gray-600 font-bold text-xs"
+              >
+                Cancel
+              </button>
+            )}
+
+            {step < 4 ? (
+              <button
+                type="button"
+                onClick={handleNext}
+                className="bg-[#0d2b6b] hover:bg-[#00b4a0] text-white font-bold px-8 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-md"
+              >
+                Next
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handlePostJobAction}
+                className="bg-[#22c36a] hover:bg-[#1db05d] text-white font-bold px-8 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-md"
+              >
+                Post Job Live
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {/* ── EMAIL VERIFICATION MODAL POPUP (Image 2) ── */}
+      {showOtpModal && (
+        <div className="fixed inset-0 z-50 bg-[#0d1b3e]/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative border border-gray-100 text-center">
+            
+            {/* Close modal */}
+            <button
+              onClick={() => setShowOtpModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold p-1 transition-colors"
+            >
+              ×
+            </button>
+
+            <div className="text-center mb-6">
+              <h3 className="text-2xl font-black text-[#0d1b3e]">Verify email</h3>
+              <p className="text-xs text-gray-400 font-semibold mt-2.5 flex items-center justify-center gap-1.5">
+                We have sent an OTP to your email
+                {isEditingEmail ? (
+                  <input
+                    type="email"
+                    value={emailForVerification}
+                    onChange={(e) => setEmailForVerification(e.target.value)}
+                    onBlur={() => setIsEditingEmail(false)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') setIsEditingEmail(false); }}
+                    className="border border-gray-200 px-2 py-0.5 rounded text-xs text-gray-700 outline-none"
+                    autoFocus
+                  />
+                ) : (
+                  <>
+                    <span className="text-[#0d2b6b] font-black">{emailForVerification}</span>
+                    <button
+                      onClick={() => setIsEditingEmail(true)}
+                      className="text-xs text-gray-400 hover:text-gray-600"
+                    >
+                      ✏️
+                    </button>
+                  </>
+                )}
+              </p>
+            </div>
+
+            {/* Digits verification inputs */}
+            <div className="flex gap-2 justify-center my-6">
+              {otpDigits.map((digit, i) => (
+                <input
+                  key={i}
+                  id={`verify-otp-${i}`}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (!/^\d?$/.test(val)) return;
+                    const nextDigits = [...otpDigits];
+                    nextDigits[i] = val;
+                    setOtpDigits(nextDigits);
+                    if (val && i < 5) {
+                      const nextInput = document.getElementById(`verify-otp-${i + 1}`) as HTMLInputElement;
+                      nextInput?.focus();
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Backspace' && !otpDigits[i] && i > 0) {
+                      const prevInput = document.getElementById(`verify-otp-${i - 1}`) as HTMLInputElement;
+                      prevInput?.focus();
+                    }
+                  }}
+                  className={`w-11 h-12 text-center text-lg font-bold border-2 rounded-xl outline-none transition-all ${
+                    digit ? 'border-[#00b4a0] bg-[#00b4a0]/5 text-[#0d1b3e]' : 'border-gray-200 text-gray-400'
+                  } focus:border-[#00b4a0]`}
+                />
+              ))}
+            </div>
+
+            <p className="text-[11px] text-gray-400 font-bold mb-6">
+              Didn't receive it?{' '}
+              <button
+                onClick={() => { alert('📬 Resent verification OTP to: ' + emailForVerification); setOtpDigits(['', '', '', '', '', '']); }}
+                className="text-[#00b4a0] hover:underline font-black cursor-pointer"
+              >
+                Resend OTP
+              </button>
+            </p>
+
+            <button
+              onClick={handleOtpVerifySubmit}
+              disabled={otpDigits.join('').length < 6}
+              className="w-full bg-[#0d2b6b] hover:bg-[#00b4a0] text-white font-bold py-3.5 rounded-xl transition-all duration-300 disabled:opacity-40 flex items-center justify-center gap-2 text-xs uppercase tracking-wider cursor-pointer"
+            >
+              Verify OTP
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -1866,23 +1987,7 @@ export default function EmployerCTA({
     setCurrentPage(nextPage);
   };
 
-  const handlePublish = async (plan: string) => {
-    const salaryStr = `₹${Number(jobData.minSalary).toLocaleString('en-IN')}–₹${Number(jobData.maxSalary).toLocaleString('en-IN')}/mo`;
-    const expStr = jobData.minExperience === '0' ? 'Fresher' : `${jobData.minExperience} yrs`;
-    const typeStr = jobData.jobType === 'fulltime' ? 'Full-time' : jobData.jobType === 'parttime' ? 'Part-time' : 'Full-time';
-    
-    const newJobObj = {
-      title: jobData.jobTitle || 'Medical Staff Specialist',
-      hospital: employerProfile?.businessName || 'Verified Hospital',
-      location: jobData.jobCity || 'Delhi NCR',
-      type: typeStr,
-      salary: salaryStr,
-      exp: expStr,
-      specialty: jobData.jobRoleCategory || 'Doctors',
-      logo: employerProfile?.logo || '🏥',
-      posted: 'Just now',
-    };
-
+  const handlePublish = async (newJobObj: any) => {
     try {
       const { data, error } = await supabase
         .from('jobs')
@@ -1900,7 +2005,7 @@ export default function EmployerCTA({
       setJobs([{ id: jobs.length + 1, ...newJobObj }, ...jobs]);
     }
 
-    alert('✅ Job posted successfully with plan: ' + plan);
+    alert('✅ Job posted successfully!');
     onNavigate('jobs');
     setCurrentPage('home');
   };
@@ -1987,19 +2092,13 @@ export default function EmployerCTA({
           />
         );
       case 'job-details':
-        return <JobDetails onNext={(data) => handleNext(data, 'location')} onBack={() => setCurrentPage('home')} profile={employerProfile} />;
-      case 'location':
-        return <Location onNext={(data) => handleNext(data, 'compensation')} onBack={() => setCurrentPage('job-details')} />;
-      case 'compensation':
-        return <Compensation onNext={(data) => handleNext(data, 'requirements')} onBack={() => setCurrentPage('location')} />;
-      case 'requirements':
-        return <CandidateRequirements onNext={(data) => handleNext(data, 'interviewer')} onBack={() => setCurrentPage('compensation')} />;
-      case 'interviewer':
-        return <InterviewerInfo onNext={(data) => handleNext(data, 'preview')} onBack={() => setCurrentPage('requirements')} />;
-      case 'preview':
-        return <JobPreview data={jobData} onNext={() => setCurrentPage('publish')} onBack={() => setCurrentPage('interviewer')} profile={employerProfile} />;
-      case 'publish':
-        return <PublishPage onPublish={handlePublish} onBack={() => setCurrentPage('preview')} />;
+        return (
+          <JobPostingWizard 
+            profile={employerProfile}
+            onPublish={handlePublish}
+            onCancel={() => setCurrentPage('home')}
+          />
+        );
       default:
         return (
           <PricingScreen 
