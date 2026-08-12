@@ -333,6 +333,32 @@ const EmployerDashboard = ({
 }) => {
   const myJobs = jobs.filter(job => job.hospital.toLowerCase() === profile.businessName.toLowerCase());
   const [expandedJobId, setExpandedJobId] = useState<number | null>(null);
+  const [applicantStatuses, setApplicantStatuses] = useState<Record<string, string>>(() => {
+    const saved = localStorage.getItem('applicant_statuses');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  useEffect(() => {
+    const loadDbStatuses = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('applications')
+          .select('job_id, seeker_phone, status');
+        if (!error && data) {
+          const loaded: Record<string, string> = {};
+          data.forEach((row: any) => {
+            if (row.status) {
+              loaded[`${row.job_id}_${row.seeker_phone}`] = row.status;
+            }
+          });
+          setApplicantStatuses(prev => ({ ...prev, ...loaded }));
+        }
+      } catch (err) {
+        console.error('Error fetching applications status:', err);
+      }
+    };
+    loadDbStatuses();
+  }, [jobs]);
 
   const getApplicantsForJob = (jobId: number) => {
     const mockApplicants = [
@@ -342,7 +368,7 @@ const EmployerDashboard = ({
         role: 'Cardiologist',
         qualification: 'MBBS, MD Cardiology',
         experience: '6 yrs',
-        phone: '+91 98989 89898',
+        phone: '9898989898',
         resumeName: 'Dr_Amit_Sharma_CV.pdf',
         avatar: '👨‍⚕️',
       },
@@ -352,7 +378,7 @@ const EmployerDashboard = ({
         role: 'ICU Staff Nurse',
         qualification: 'B.Sc Nursing, BCLS',
         experience: '4 yrs',
-        phone: '+91 97777 66666',
+        phone: '9777766666',
         resumeName: 'Riya_Sen_Nurse_Resume.pdf',
         avatar: '👩‍⚕️',
       },
@@ -362,7 +388,7 @@ const EmployerDashboard = ({
         role: 'Pediatric Specialist',
         qualification: 'MBBS, MD Pediatrics',
         experience: '8 yrs',
-        phone: '+91 95555 44444',
+        phone: '9555544444',
         resumeName: 'Dr_Neha_Gupta_Resume.pdf',
         avatar: '👩‍⚕️',
       }
@@ -388,7 +414,7 @@ const EmployerDashboard = ({
           role: prof.specialty || 'Medical Specialist',
           qualification: prof.qualification || 'MBBS',
           experience: prof.experience || 'Fresher',
-          phone: localStorage.getItem('seeker_phone') || '+91 98765 43210',
+          phone: localStorage.getItem('seeker_phone') || '9876543210',
           resumeName: localStorage.getItem('seeker_resume_name') || 'My_Resume.pdf',
           avatar: avatarImg || '👤',
         }];
@@ -411,7 +437,7 @@ const EmployerDashboard = ({
         role: prof.specialty || 'Medical Specialist',
         qualification: prof.qualification || 'MBBS',
         experience: prof.experience || 'Fresher',
-        phone: localStorage.getItem('seeker_phone') || '+91 98765 43210',
+        phone: localStorage.getItem('seeker_phone') || '9876543210',
         resumeName: localStorage.getItem('seeker_resume_name') || 'My_Resume.pdf',
         avatar: avatarImg || '👤',
       };
@@ -464,13 +490,13 @@ const EmployerDashboard = ({
           <div className="flex gap-3 w-full sm:w-auto shrink-0">
             <button
               onClick={onPostJob}
-              className="flex-1 sm:flex-initial bg-[#00b4a0] hover:bg-[#009888] text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm shadow-md hover:shadow-lg flex items-center justify-center gap-1.5"
+              className="flex-1 sm:flex-initial bg-[#00b4a0] hover:bg-[#009888] text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm shadow-md hover:shadow-lg flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <span>➕</span> Post a New Job
             </button>
             <button
               onClick={onLogout}
-              className="px-4 py-3 border border-red-200 text-red-500 hover:bg-red-50 rounded-xl transition-colors text-sm font-semibold"
+              className="px-4 py-3 border border-red-200 text-red-500 hover:bg-red-50 rounded-xl transition-colors text-sm font-semibold cursor-pointer"
             >
               Sign Out
             </button>
@@ -563,7 +589,7 @@ const EmployerDashboard = ({
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="inline-block bg-yellow-50 text-yellow-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase mb-2">Pending Review</span>
+                        <span className="inline-block bg-[#00b4a0]/15 text-[#00b4a0] text-[10px] font-bold px-2 py-0.5 rounded-full uppercase mb-2">Live Listing</span>
                         <p className="text-xs text-gray-400 font-semibold">{job.posted}</p>
                       </div>
                     </div>
@@ -573,11 +599,11 @@ const EmployerDashboard = ({
                       <div className="flex gap-3">
                         <button 
                           onClick={() => setExpandedJobId(expandedJobId === job.id ? null : job.id)} 
-                          className="text-[#00b4a0] font-semibold hover:underline"
+                          className="text-[#00b4a0] font-semibold hover:underline cursor-pointer"
                         >
                           {expandedJobId === job.id ? 'Hide Applicants' : 'View Applicants'}
                         </button>
-                        <button className="text-red-500 font-semibold hover:underline">Deactivate</button>
+                        <button className="text-red-500 font-semibold hover:underline cursor-pointer">Deactivate</button>
                       </div>
                     </div>
 
@@ -588,29 +614,69 @@ const EmployerDashboard = ({
                           Applied Candidates ({getApplicantsForJob(job.id).length}):
                         </h4>
                         {getApplicantsForJob(job.id).length > 0 ? (
-                          <div className="space-y-3">
+                          <div className="space-y-4">
                             {getApplicantsForJob(job.id).map(applicant => (
-                              <div key={applicant.id} className="bg-white border border-gray-100 rounded-xl p-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-xl overflow-hidden shrink-0 border border-gray-100">
-                                    {applicant.avatar.length > 4 ? (
-                                      <img src={applicant.avatar} alt="Logo" className="w-full h-full object-cover" />
-                                    ) : (
-                                      <span>{applicant.avatar}</span>
-                                    )}
+                              <div key={applicant.phone} className="bg-white border border-gray-100 rounded-xl p-4 flex flex-col gap-3 shadow-sm">
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-xl overflow-hidden shrink-0 border border-gray-100">
+                                      {applicant.avatar.length > 4 ? (
+                                        <img src={applicant.avatar} alt="Logo" className="w-full h-full object-cover" />
+                                      ) : (
+                                        <span>{applicant.avatar}</span>
+                                      )}
+                                    </div>
+                                    <div>
+                                      <h5 className="font-bold text-[#0d1b3e] text-sm">{applicant.name}</h5>
+                                      <p className="text-[11px] text-[#00b4a0] font-semibold mt-0.5">{applicant.role} • {applicant.qualification}</p>
+                                      <p className="text-[10px] text-gray-400 mt-0.5">Exp: {applicant.experience} | Phone: {applicant.phone}</p>
+                                    </div>
                                   </div>
-                                  <div>
-                                    <h5 className="font-bold text-[#0d1b3e] text-sm">{applicant.name}</h5>
-                                    <p className="text-[11px] text-[#00b4a0] font-semibold mt-0.5">{applicant.role} • {applicant.qualification}</p>
-                                    <p className="text-[10px] text-gray-400 mt-0.5">Exp: {applicant.experience} | Mob: {applicant.phone}</p>
+                                  <button
+                                    onClick={() => handleDownloadResume(applicant)}
+                                    className="w-full sm:w-auto bg-[#0d2b6b] hover:bg-[#00b4a0] text-white text-[10px] font-bold px-3.5 py-2 rounded-lg transition-all flex items-center justify-center gap-1 shadow-sm cursor-pointer shrink-0"
+                                  >
+                                    📥 Download CV
+                                  </button>
+                                </div>
+
+                                {/* Hiring status stepper */}
+                                <div className="border-t border-gray-50 pt-2.5">
+                                  <p className="text-[9px] text-gray-400 font-extrabold uppercase tracking-widest mb-2">Hiring Pipeline Status:</p>
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    {['Applied', 'Screened', 'Shortlisted', 'Interview', 'Selected', 'Joined'].map((stage) => {
+                                      const isCurrent = (applicantStatuses[`${job.id}_${applicant.phone}`] || 'Applied') === stage;
+                                      return (
+                                        <button
+                                          key={stage}
+                                          onClick={async () => {
+                                            const newStatuses = { ...applicantStatuses, [`${job.id}_${applicant.phone}`]: stage };
+                                            setApplicantStatuses(newStatuses);
+                                            localStorage.setItem('applicant_statuses', JSON.stringify(newStatuses));
+                                            
+                                            // Sync to Supabase in background
+                                            try {
+                                              await supabase
+                                                .from('applications')
+                                                .update({ status: stage })
+                                                .eq('job_id', job.id)
+                                                .eq('seeker_phone', applicant.phone);
+                                            } catch (err) {
+                                              console.error('Failed to sync status to Supabase:', err);
+                                            }
+                                          }}
+                                          className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider transition-all duration-150 cursor-pointer ${
+                                            isCurrent
+                                              ? 'bg-[#0d2b6b] text-white shadow-sm border border-[#0d2b6b]'
+                                              : 'bg-gray-100 hover:bg-gray-200 text-gray-500 border border-transparent'
+                                          }`}
+                                        >
+                                          {stage}
+                                        </button>
+                                      );
+                                    })}
                                   </div>
                                 </div>
-                                <button
-                                  onClick={() => handleDownloadResume(applicant)}
-                                  className="w-full sm:w-auto bg-[#0d2b6b] hover:bg-[#00b4a0] text-white text-[10px] font-bold px-3.5 py-2 rounded-lg transition-all flex items-center justify-center gap-1 shadow-sm"
-                                >
-                                  📥 Download CV
-                                </button>
                               </div>
                             ))}
                           </div>
@@ -629,7 +695,7 @@ const EmployerDashboard = ({
                 <p className="text-[#5a6a8a] text-sm mb-6 max-w-sm mx-auto">Create your first medical job posting to receive verified applications from medical specialists.</p>
                 <button
                   onClick={onPostJob}
-                  className="bg-[#00b4a0] hover:bg-[#009888] text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 text-sm shadow-md hover:shadow-lg inline-flex items-center gap-1.5"
+                  className="bg-[#00b4a0] hover:bg-[#009888] text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 text-sm shadow-md hover:shadow-lg inline-flex items-center gap-1.5 cursor-pointer"
                 >
                   Post a Job Now
                 </button>
@@ -1315,52 +1381,407 @@ interface EmployerCTAProps {
   setEmployerProfile: (profile: any) => void;
 }
 
-const pricingPlans = [
-  {
-    name: 'Basic',
-    price: '₹2,999',
-    period: '/month',
-    highlight: false,
-    features: [
-      '5 Job Postings/month',
-      'Access to 10,000 profiles',
-      'Basic candidate filters',
-      'Email support',
-      '30-day job visibility',
-    ],
-  },
-  {
-    name: 'Professional',
-    price: '₹7,999',
-    period: '/month',
-    highlight: true,
-    badge: 'Most Popular',
-    features: [
-      '25 Job Postings/month',
-      'Unlimited profile access',
-      'Advanced specialty filters',
-      'Priority support',
-      '60-day job visibility',
-      'Featured job listings',
-      'Candidate shortlisting tool',
-    ],
-  },
-  {
-    name: 'Enterprise',
-    price: 'Custom',
-    period: '',
-    highlight: false,
-    features: [
-      'Unlimited Job Postings',
-      'Dedicated account manager',
-      'AI-powered candidate matching',
-      '24/7 phone & chat support',
-      'Branded hospital profile',
-      'Analytics dashboard',
-      'Bulk hiring solutions',
-    ],
-  },
-];
+// ── CUSTOM SUB-COMPONENT: PRICING SCREEN ──
+function PricingScreen({ onSelectPlan }: { onSelectPlan: (plan: { name: string; price: number }) => void }) {
+  const plans = [
+    {
+      name: 'Hot Vacancy',
+      price: 1650,
+      description: 'Maximum visibility & quick hiring',
+      recommended: true,
+      features: [
+        'Detailed job description',
+        '3 job locations',
+        'Unlimited applies',
+        'Applies expiry 90 days',
+        'Jobseeker contact details visible',
+        'Boost on Job Search Page',
+        'Job Branding'
+      ],
+      validity: 'Job validity 30 days',
+      discount: 'Flat 10% OFF on 5 Job Postings or more'
+    },
+    {
+      name: 'Classified',
+      price: 850,
+      description: 'Cost-effective posting with visibility',
+      recommended: false,
+      features: [
+        'Upto 250 character job description',
+        '3 job locations',
+        'Unlimited applies',
+        'Applies expiry 90 days',
+        'Jobseeker contact details visible',
+        'Boost on Job Search Page (Not Included)',
+        'Job Branding (Not Included)'
+      ],
+      validity: 'Job validity 30 days',
+      discount: 'Flat 10% OFF on 5 Job Postings or more'
+    },
+    {
+      name: 'Standard',
+      price: 400,
+      description: 'Standard visibility for single openings',
+      recommended: false,
+      features: [
+        'Upto 250 character job description',
+        '1 job location',
+        '200 applies',
+        'Applies expiry 30 days',
+        'Jobseeker contact details visible (Not Included)',
+        'Boost on Job Search Page (Not Included)',
+        'Job Branding (Not Included)'
+      ],
+      validity: 'Job validity 15 days',
+      discount: 'Flat 10% OFF on 5 Job Postings or more'
+    },
+    {
+      name: 'Free',
+      price: 0,
+      description: 'Basic listing to start recruitment',
+      recommended: false,
+      features: [
+        'Upto 250 character job description',
+        '1 job location',
+        '50 applies',
+        'Applies expiry 15 days',
+        'Jobseeker contact details visible (Not Included)',
+        'Boost on Job Search Page (Not Included)',
+        'Job Branding (Not Included)'
+      ],
+      validity: 'Job validity 7 days',
+      discount: ''
+    }
+  ];
+
+  return (
+    <div className="py-16 bg-[#f0f5ff] min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="text-center mb-12">
+          <span className="text-[#00b4a0] bg-[#00b4a0]/10 text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider">Pricing Plans</span>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0d1b3e] mt-4">Find & Hire the Right Talent With Us</h2>
+          <p className="text-gray-500 mt-2 text-sm sm:text-base font-medium">Trusted by 9 Cr+ candidates | 5 Lakh+ employers</p>
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+          {plans.map((p) => (
+            <div key={p.name} className={`bg-white rounded-3xl p-6 shadow-xl border flex flex-col justify-between relative transition-all duration-300 hover:-translate-y-1.5 ${p.recommended ? 'border-2 border-[#00b4a0] scale-105 shadow-[#00b4a0]/10' : 'border-gray-100 shadow-gray-200/50'}`}>
+              {p.recommended && <span className="absolute -top-3.5 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-[#00b4a0] to-[#22c36a] text-white text-[10px] font-black px-4 py-1 rounded-full uppercase tracking-wider shadow-md">Best Value</span>}
+              <div>
+                <h3 className={`text-xl font-black ${p.price === 0 ? 'text-[#22c36a]' : 'text-[#0d1b3e]'}`}>{p.name}</h3>
+                <div className="mt-4 flex items-baseline">
+                  <span className="text-3xl font-black text-[#0d1b3e]">{p.price === 0 ? 'Free' : `₹${p.price.toLocaleString('en-IN')}`}</span>
+                  {p.price > 0 && <span className="text-[10px] text-gray-400 font-bold ml-1.5 uppercase tracking-wide">*GST as applicable</span>}
+                </div>
+                <p className="text-xs text-gray-400 mt-1.5 font-medium">{p.description}</p>
+                <div className="h-[1px] bg-gray-100 my-5" />
+
+                <div className="space-y-3 mb-6">
+                  <p className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest">Key Features</p>
+                  {p.features.map((f, i) => (
+                    <div key={i} className="flex items-start gap-2 text-xs">
+                      <span className={f.includes('Not Included') ? 'text-gray-300' : 'text-[#22c36a]'}>{f.includes('Not Included') ? '✗' : '✓'}</span>
+                      <span className={f.includes('Not Included') ? 'text-gray-400 line-through' : 'text-gray-700 font-medium'}>{f.replace(' (Not Included)', '')}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="h-[1px] bg-gray-100 my-5" />
+                <div className="text-center mb-5 space-y-1">
+                  <p className="text-[11px] font-bold text-gray-700">{p.validity}</p>
+                  {p.discount && <p className="text-[10px] font-bold text-[#00b4a0] bg-[#00b4a0]/5 px-2 py-0.5 rounded-full inline-block">{p.discount}</p>}
+                </div>
+                <button
+                  onClick={() => onSelectPlan({ name: p.name, price: p.price })}
+                  className={`w-full py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider transition-all duration-200 cursor-pointer ${
+                    p.price === 0 
+                      ? 'bg-[#22c36a]/10 hover:bg-[#22c36a] text-[#22c36a] hover:text-white border border-[#22c36a]/20 shadow-sm'
+                      : 'bg-[#0d2b6b] hover:bg-[#00b4a0] text-white shadow-md shadow-[#0d2b6b]/10'
+                  }`}
+                >
+                  {p.price === 0 ? 'Post a free job' : 'Buy now'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── CUSTOM SUB-COMPONENT: CONTINUE PURCHASE LOGIN SCREEN ──
+function PurchaseLoginScreen({ 
+  onLogin, 
+  onRegister, 
+  planName 
+}: { 
+  onLogin: (phone: string) => void; 
+  onRegister: () => void; 
+  planName: string 
+}) {
+  const [phone, setPhone] = useState('');
+  const [googleLoggingIn, setGoogleLoggingIn] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (phone.trim()) onLogin(phone.trim());
+  };
+
+  const handleGoogleLogin = () => {
+    setGoogleLoggingIn(true);
+    setTimeout(() => {
+      setGoogleLoggingIn(false);
+      onLogin('9876543210'); // Simulated profile number
+    }, 1200);
+  };
+
+  return (
+    <div className="py-16 bg-[#f0f5ff] min-h-screen flex items-center justify-center">
+      <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-xl border border-gray-100 text-center mx-4">
+        <span className="text-[#00b4a0] bg-[#00b4a0]/10 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-wider">Purchase Flow</span>
+        <h2 className="text-2xl font-black text-[#0d1b3e] mt-4 mb-2">Find & Hire the Right Talent With Us</h2>
+        <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-6">Trusted by 9 Cr+ candidates | 5 Lakh+ employers</p>
+
+        <div className="bg-blue-50/50 border border-blue-100/50 rounded-2xl p-4 mb-6">
+          <p className="text-xs font-bold text-gray-700">Continuing purchase for: <span className="text-[#0d2b6b] font-black">{planName} Plan</span></p>
+        </div>
+
+        <div className="space-y-6">
+          {/* New User registration CTA */}
+          <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 text-left">
+            <h4 className="text-sm font-black text-[#0d1b3e] mb-1">New to 24medijobs?</h4>
+            <p className="text-xs text-gray-500 mb-4">Complete your hospital details to configure your recruiter portal profile.</p>
+            <button
+              onClick={onRegister}
+              className="w-full bg-[#00b4a0] hover:bg-[#009888] text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer"
+            >
+              Continue as a New User
+            </button>
+          </div>
+
+          <div className="flex items-center my-4">
+            <div className="h-[1px] bg-gray-200 flex-1" />
+            <span className="text-[10px] font-extrabold text-gray-400 px-4 uppercase tracking-widest">or Sign In</span>
+            <div className="h-[1px] bg-gray-200 flex-1" />
+          </div>
+
+          {/* Existing User Login form */}
+          <form onSubmit={handleSubmit} className="text-left space-y-4">
+            <div>
+              <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">Registered Phone Number</label>
+              <input
+                type="tel"
+                required
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Enter 10-digit phone"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-[#0d2b6b] hover:bg-[#0d2b6b]/95 text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-md"
+            >
+              Verify OTP & Sign In
+            </button>
+          </form>
+
+          <button
+            onClick={handleGoogleLogin}
+            disabled={googleLoggingIn}
+            className="w-full border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+          >
+            {googleLoggingIn ? (
+              <span>Connecting to Google...</span>
+            ) : (
+              <>
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                  <path fill="#EA4335" d="M12 5.04c1.62 0 3.08.56 4.22 1.65l3.15-3.15C17.45 1.76 14.94 1 12 1 7.35 1 3.39 3.65 1.5 7.5l3.86 3C6.31 7.49 8.94 5.04 12 5.04z" />
+                  <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.46c-.28 1.48-1.12 2.73-2.38 3.58l3.7 2.87c2.16-2 3.71-4.94 3.71-8.6z" />
+                  <path fill="#FBBC05" d="M5.36 14.5c-.24-.72-.38-1.49-.38-2.3s.14-1.58.38-2.3L1.5 6.9C.54 8.82 0 10.97 0 13.2s.54 4.38 1.5 6.3l3.86-3z" />
+                  <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.7-2.87c-1.11.75-2.53 1.2-4.26 1.2-3.06 0-5.69-2.45-6.64-5.46L1.5 15.96C3.39 19.8 7.35 22.46 12 23z" />
+                </svg>
+                Continue with Google
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── CUSTOM SUB-COMPONENT: PAY NOW CHECKOUT SCREEN ──
+function PayNowScreen({ 
+  plan, 
+  onPaymentSuccess 
+}: { 
+  plan: { name: string; price: number }; 
+  onPaymentSuccess: () => void 
+}) {
+  const [gstNumber, setGstNumber] = useState('');
+  const [upiId, setUpiId] = useState('');
+  const [showQR, setShowQR] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
+
+  const subTotal = plan.price;
+  const gst = subTotal * 0.18;
+  const total = subTotal + gst;
+
+  const handleVerifyUpi = () => {
+    if (!upiId.trim() || !upiId.includes('@')) {
+      alert('Please enter a valid UPI ID (e.g. user@okaxis)');
+      return;
+    }
+    setIsVerifying(true);
+    setTimeout(() => {
+      setIsVerifying(false);
+      setIsPaying(true);
+      setTimeout(() => {
+        setIsPaying(false);
+        onPaymentSuccess();
+      }, 1500);
+    }, 1200);
+  };
+
+  const handleSimulateQRScan = () => {
+    setIsPaying(true);
+    setTimeout(() => {
+      setIsPaying(false);
+      onPaymentSuccess();
+    }, 1800);
+  };
+
+  return (
+    <div className="py-16 bg-[#f0f5ff] min-h-screen flex items-center justify-center">
+      <div className="bg-white rounded-3xl p-8 max-w-3xl w-full shadow-xl border border-gray-100 grid md:grid-cols-2 gap-8 mx-4">
+        {/* Left: Invoice Summary */}
+        <div className="space-y-6">
+          <div>
+            <span className="text-[#0d2b6b] bg-[#0d2b6b]/5 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider">Plan Details</span>
+            <h3 className="text-xl font-black text-[#0d1b3e] mt-3">Plan: {plan.name}</h3>
+            <p className="text-xs text-[#00b4a0] font-bold mt-1">Pack of 2 Job Postings and Naukri database access (60 CVs)</p>
+          </div>
+
+          <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 space-y-3">
+            <div className="flex justify-between text-xs font-bold text-gray-500">
+              <span>Sub total</span>
+              <span>₹{subTotal.toLocaleString('en-IN')}.00</span>
+            </div>
+            <div className="flex justify-between text-xs font-bold text-gray-500">
+              <span>Estimated GST (18%)</span>
+              <span>+ ₹{gst.toLocaleString('en-IN')}.00</span>
+            </div>
+            <div className="h-[1px] bg-gray-200/60 my-2" />
+            <div className="flex justify-between text-sm font-black text-[#0d1b3e]">
+              <span>Total payable amount</span>
+              <span>₹{total.toLocaleString('en-IN')}.00</span>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">Add GST number (Optional)</label>
+            <input
+              type="text"
+              value={gstNumber}
+              onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
+              placeholder="e.g. 07AAAAA1111A1Z1"
+              maxLength={15}
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors uppercase"
+            />
+          </div>
+
+          <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded-xl text-[10px] leading-relaxed flex gap-2">
+            <span>⚠️</span>
+            <span>
+              <strong>Note:</strong> To activate your subscription, it’s mandatory to complete the KYC process as mandated by government regulations. <span className="underline cursor-pointer font-bold">Know more</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Right: Payment Gateway */}
+        <div className="border-t md:border-t-0 md:border-l border-gray-100 pt-6 md:pt-0 md:pl-8 flex flex-col justify-center space-y-6">
+          <div className="text-center">
+            <h4 className="text-sm font-black text-[#0d1b3e] mb-1">Select Payment Mode</h4>
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Secure UPI Checkout</p>
+          </div>
+
+          {/* QR Code toggle */}
+          <div className="space-y-4">
+            <button
+              onClick={() => setShowQR(!showQR)}
+              className="w-full border-2 border-dashed border-[#0d2b6b]/30 hover:border-[#00b4a0] bg-gray-50/50 hover:bg-white rounded-2xl p-4 text-center transition-all duration-200 cursor-pointer flex flex-col items-center justify-center gap-1.5"
+            >
+              <span className="text-lg">📱</span>
+              <span className="text-xs font-black text-gray-700">{showQR ? 'Hide UPI QR Code' : 'Show QR Code'}</span>
+              <p className="text-[9px] text-gray-400 font-medium">Scan using any BHIM, GPAY, PhonePe app</p>
+            </button>
+
+            {showQR && (
+              <div className="bg-white border border-gray-100 rounded-2xl p-4 text-center shadow-lg flex flex-col items-center justify-center">
+                {/* Mock SVG QR Code */}
+                <svg className="w-28 h-28 text-gray-800" viewBox="0 0 100 100">
+                  <rect width="100" height="100" fill="#fff" />
+                  <rect x="10" y="10" width="20" height="20" fill="currentColor" />
+                  <rect x="15" y="15" width="10" height="10" fill="#fff" />
+                  <rect x="70" y="10" width="20" height="20" fill="currentColor" />
+                  <rect x="75" y="15" width="10" height="10" fill="#fff" />
+                  <rect x="10" y="70" width="20" height="20" fill="currentColor" />
+                  <rect x="15" y="75" width="10" height="10" fill="#fff" />
+                  <rect x="40" y="20" width="8" height="8" fill="currentColor" />
+                  <rect x="55" y="30" width="10" height="4" fill="currentColor" />
+                  <rect x="35" y="45" width="15" height="5" fill="currentColor" />
+                  <rect x="45" y="60" width="6" height="10" fill="currentColor" />
+                  <rect x="55" y="75" width="10" height="10" fill="currentColor" />
+                  <rect x="30" y="75" width="5" height="5" fill="currentColor" />
+                </svg>
+                <p className="text-[10px] font-bold text-gray-700 mt-3 leading-relaxed">Scan the QR code using any UPI app to complete your payment</p>
+                <button
+                  onClick={handleSimulateQRScan}
+                  disabled={isPaying}
+                  className="mt-3 bg-[#22c36a] hover:bg-[#1db05d] text-white text-[10px] font-extrabold px-4 py-2 rounded-lg transition-colors cursor-pointer"
+                >
+                  {isPaying ? 'Processing payment...' : '✓ Simulated QR Scan Completed'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center">
+            <div className="h-[1px] bg-gray-200/80 flex-1" />
+            <span className="text-[9px] font-extrabold text-gray-400 px-3 uppercase tracking-widest">or</span>
+            <div className="h-[1px] bg-gray-200/80 flex-1" />
+          </div>
+
+          {/* UPI ID input */}
+          <div className="space-y-3">
+            <div>
+              <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">Enter UPI ID</label>
+              <input
+                type="text"
+                value={upiId}
+                onChange={(e) => setUpiId(e.target.value)}
+                placeholder="username@upi"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+              />
+            </div>
+            <button
+              onClick={handleVerifyUpi}
+              disabled={isVerifying || isPaying}
+              className="w-full bg-[#0d2b6b] hover:bg-[#00b4a0] text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-2"
+            >
+              {isVerifying ? 'Verifying ID...' : isPaying ? 'Processing Payment...' : 'Verify & Pay'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function EmployerCTA({ 
   onNavigate, 
@@ -1370,14 +1791,15 @@ export default function EmployerCTA({
   setEmployerProfile 
 }: EmployerCTAProps) {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const [currentPage, setCurrentPage] = useState<'home' | 'login' | 'profile-setup' | 'job-details' | 'location' | 'compensation' | 'requirements' | 'interviewer' | 'preview' | 'publish'>(employerProfile ? 'home' : 'login');
+  const [currentPage, setCurrentPage] = useState<'home' | 'pricing' | 'login' | 'profile-setup' | 'pay-now' | 'job-details' | 'location' | 'compensation' | 'requirements' | 'interviewer' | 'preview' | 'publish'>(employerProfile ? 'home' : 'pricing');
   const [jobData, setJobData] = useState<any>({});
   const [tempEmployerPhone, setTempEmployerPhone] = useState('');
+  const [selectedPlan, setSelectedPlan] = useState<{ name: string; price: number } | null>(null);
 
   useEffect(() => {
     if (!employerProfile) {
-      setCurrentPage('login');
-    } else if (currentPage === 'login') {
+      setCurrentPage('pricing');
+    } else if (currentPage === 'login' || currentPage === 'pricing' || currentPage === 'pay-now') {
       setCurrentPage('home');
     }
   }, [employerProfile]);
@@ -1421,8 +1843,13 @@ export default function EmployerCTA({
           phone: profileRow.phone
         };
         setEmployerProfile(mappedProfile);
-        setCurrentPage('home');
-        onNavigate('jobs');
+        
+        if (selectedPlan && selectedPlan.price > 0) {
+          setCurrentPage('pay-now');
+        } else {
+          setCurrentPage('home');
+          onNavigate('jobs');
+        }
       } else {
         if (error) console.error('Error fetching employer profile:', error);
         setCurrentPage('profile-setup');
@@ -1488,15 +1915,41 @@ export default function EmployerCTA({
           onPostJob={() => setCurrentPage('job-details')} 
           onLogout={() => {
             setEmployerProfile(null);
-            setCurrentPage('home');
+            setCurrentPage('pricing');
           }}
         />
       );
     }
 
     switch (currentPage) {
+      case 'pricing':
+        return (
+          <PricingScreen 
+            onSelectPlan={(plan) => {
+              setSelectedPlan(plan);
+              setCurrentPage('login');
+            }} 
+          />
+        );
       case 'login':
-        return <EmployerLogin onLogin={handleLogin} />;
+        return (
+          <PurchaseLoginScreen 
+            planName={selectedPlan?.name || 'Free'}
+            onLogin={handleLogin}
+            onRegister={() => setCurrentPage('profile-setup')}
+          />
+        );
+      case 'pay-now':
+        return (
+          <PayNowScreen 
+            plan={selectedPlan || { name: 'Standard', price: 400 }}
+            onPaymentSuccess={() => {
+              alert('🎉 Payment verified successfully! Recruit credits unlocked.');
+              setCurrentPage('home');
+              onNavigate('jobs');
+            }}
+          />
+        );
       case 'profile-setup':
         return (
           <EmployerProfileSetup 
@@ -1521,10 +1974,15 @@ export default function EmployerCTA({
                 console.error('Error saving employer profile to Supabase:', err);
               }
               setEmployerProfile(fullProfile);
-              setCurrentPage('home');
-              onNavigate('jobs');
+              
+              if (selectedPlan && selectedPlan.price > 0) {
+                setCurrentPage('pay-now');
+              } else {
+                setCurrentPage('home');
+                onNavigate('jobs');
+              }
             }} 
-            onBack={() => setCurrentPage('home')} 
+            onBack={() => setCurrentPage('pricing')} 
           />
         );
       case 'job-details':
@@ -1543,127 +2001,12 @@ export default function EmployerCTA({
         return <PublishPage onPublish={handlePublish} onBack={() => setCurrentPage('preview')} />;
       default:
         return (
-          <section className="py-20 bg-[#f0f5ff]" ref={sectionRef}>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
-              {/* Employer CTA Banner */}
-              <div
-                className="rounded-3xl p-8 sm:p-12 mb-20 relative overflow-hidden section-reveal animate-float"
-                style={{ background: 'linear-gradient(135deg, #0d2b6b 0%, #00b4a0 100%)' }}
-              >
-                <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full -translate-y-1/3 translate-x-1/3 animate-spin-slow" />
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#22c36a]/10 rounded-full translate-y-1/3 -translate-x-1/3" />
-
-                <div className="relative z-10 grid lg:grid-cols-2 gap-8 items-center">
-                  <div>
-                    <span className="inline-block text-sm font-semibold bg-white/20 text-white px-4 py-1.5 rounded-full mb-4 uppercase tracking-wider">
-                      For Employers & Hospitals
-                    </span>
-                    <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                      Hire Top Medical Talent Across India
-                    </h2>
-                    <p className="text-white/80 text-base leading-relaxed mb-6">
-                      Post jobs, screen verified candidates, and build your dream healthcare team.
-                      Join 12,000+ hospitals already hiring on 24medijobs.
-                    </p>
-                    <div className="flex flex-wrap gap-4">
-                      <button
-                        onClick={() => setCurrentPage('login')}
-                        className="bg-white text-[#0d2b6b] font-bold px-8 py-3.5 rounded-xl hover:bg-[#22c36a] hover:text-white transition-all duration-300 shadow-lg"
-                      >
-                        Post a Job — Free
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage('login')}
-                        className="border-2 border-white text-white font-semibold px-8 py-3.5 rounded-xl hover:bg-white/10 transition-all duration-200"
-                      >
-                        View Pricing Plans
-                      </button>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    {[
-                      { icon: '⚡', title: 'Fast Hiring', desc: 'Average 72-hour candidate delivery' },
-                      { icon: '✅', title: 'Verified Profiles', desc: 'All credentials pre-screened' },
-                      { icon: '🎯', title: 'Smart Matching', desc: 'AI-powered candidate recommendations' },
-                      { icon: '📊', title: 'Analytics', desc: 'Real-time hiring dashboard' },
-                    ].map((item) => (
-                      <div key={item.title} className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4">
-                        <div className="text-2xl mb-2">{item.icon}</div>
-                        <h4 className="font-bold text-white text-sm mb-1">{item.title}</h4>
-                        <p className="text-white/70 text-xs">{item.desc}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Pricing */}
-              <div className="text-center mb-12 section-reveal">
-                <span className="inline-block text-sm font-semibold text-[#00b4a0] bg-[#00b4a0]/10 px-4 py-1.5 rounded-full mb-4 uppercase tracking-wider">
-                  Pricing Plans
-                </span>
-                <h2 className="text-3xl sm:text-4xl font-bold text-[#0d1b3e] mb-4">
-                  Simple, <span className="gradient-text">Transparent Pricing</span>
-                </h2>
-                <p className="text-[#5a6a8a] max-w-xl mx-auto">
-                  Start free, scale as you hire. No hidden charges.
-                </p>
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-6">
-                {pricingPlans.map((plan, i) => (
-                  <div
-                    key={plan.name}
-                    className={`rounded-2xl p-7 relative section-reveal card-hover ${
-                      plan.highlight
-                        ? 'bg-[#0d2b6b] text-white shadow-2xl shadow-[#0d2b6b]/30 scale-105'
-                        : 'bg-white border border-gray-100'
-                    }`}
-                    style={{ transitionDelay: `${i * 0.1}s` }}
-                  >
-                    {plan.badge && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#22c36a] text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
-                        {plan.badge}
-                      </div>
-                    )}
-                    <h3 className={`font-bold text-xl mb-2 ${plan.highlight ? 'text-white' : 'text-[#0d1b3e]'}`}>
-                      {plan.name}
-                    </h3>
-                    <div className="flex items-end gap-1 mb-6">
-                      <span className={`text-4xl font-black ${plan.highlight ? 'text-white' : 'text-[#0d2b6b]'}`}>
-                        {plan.price}
-                      </span>
-                      {plan.period && (
-                        <span className={`text-sm mb-1 ${plan.highlight ? 'text-white/70' : 'text-[#5a6a8a]'}`}>
-                          {plan.period}
-                        </span>
-                      )}
-                    </div>
-                    <ul className="space-y-3 mb-8">
-                      {plan.features.map((f) => (
-                        <li key={f} className="flex items-center gap-2.5">
-                          <svg className={`w-4 h-4 shrink-0 ${plan.highlight ? 'text-[#22c36a]' : 'text-[#00b4a0]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span className={`text-sm ${plan.highlight ? 'text-white/85' : 'text-[#5a6a8a]'}`}>{f}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <button
-                      onClick={() => setCurrentPage('login')}
-                      className={`w-full font-bold py-3 rounded-xl transition-all duration-200 ${
-                        plan.highlight
-                          ? 'bg-[#00b4a0] text-white hover:bg-[#009888]'
-                          : 'bg-[#f0f5ff] text-[#0d2b6b] hover:bg-[#0d2b6b] hover:text-white'
-                      }`}
-                    >
-                      {plan.name === 'Enterprise' ? 'Contact Sales' : 'Get Started'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
+          <PricingScreen 
+            onSelectPlan={(plan) => {
+              setSelectedPlan(plan);
+              setCurrentPage('login');
+            }} 
+          />
         );
     }
   };
