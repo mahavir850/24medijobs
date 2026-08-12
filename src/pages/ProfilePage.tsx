@@ -630,7 +630,69 @@ export default function ProfilePage({ phone = '', onNavigate }: ProfilePageProps
                       ✏️
                     </button>
                   </h2>
-                  <p className="text-[10px] bg-[#00b4a0]/15 text-[#00b4a0] font-black px-3 py-0.5 rounded-full inline-block mt-1 uppercase tracking-wider">Candidate</p>
+                  <div className="flex justify-center gap-2 mt-1">
+                    <span className="text-[10px] bg-[#00b4a0]/15 text-[#00b4a0] font-black px-3 py-0.5 rounded-full uppercase tracking-wider">Candidate</span>
+                    <span className={`text-[10px] font-black px-3 py-0.5 rounded-full uppercase tracking-wider ${
+                      (() => {
+                        let score = 0;
+                        if (resumeUploaded && resumeFileName) score += 20;
+                        if (preferences.headline && preferences.headline.trim().length > 5) score += 15;
+                        if (employment.companyName && employment.jobTitle) score += 25;
+                        if (education.qualification && education.course) score += 20;
+                        if (preferences.preferredLocations && preferences.preferredLocations.length > 0) score += 20;
+                        
+                        if (score < 50) return 'bg-red-100 text-red-600';
+                        if (score < 75) return 'bg-yellow-100 text-yellow-600';
+                        return 'bg-green-100 text-green-600';
+                      })()
+                    }`}>
+                      {(() => {
+                        let score = 0;
+                        if (resumeUploaded && resumeFileName) score += 20;
+                        if (preferences.headline && preferences.headline.trim().length > 5) score += 15;
+                        if (employment.companyName && employment.jobTitle) score += 25;
+                        if (education.qualification && education.course) score += 20;
+                        if (preferences.preferredLocations && preferences.preferredLocations.length > 0) score += 20;
+                        return score;
+                      })()}% Completed
+                    </span>
+                  </div>
+
+                  {/* Profile Strength Meter Progress Bar */}
+                  <div className="mt-4 px-2">
+                    <div className="flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                      <span>Profile Strength</span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1 overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          (() => {
+                            let score = 0;
+                            if (resumeUploaded && resumeFileName) score += 20;
+                            if (preferences.headline && preferences.headline.trim().length > 5) score += 15;
+                            if (employment.companyName && employment.jobTitle) score += 25;
+                            if (education.qualification && education.course) score += 20;
+                            if (preferences.preferredLocations && preferences.preferredLocations.length > 0) score += 20;
+                            
+                            if (score < 50) return 'bg-red-500';
+                            if (score < 75) return 'bg-yellow-500';
+                            return 'bg-green-500';
+                          })()
+                        }`}
+                        style={{
+                          width: `${(() => {
+                            let score = 0;
+                            if (resumeUploaded && resumeFileName) score += 20;
+                            if (preferences.headline && preferences.headline.trim().length > 5) score += 15;
+                            if (employment.companyName && employment.jobTitle) score += 25;
+                            if (education.qualification && education.course) score += 20;
+                            if (preferences.preferredLocations && preferences.preferredLocations.length > 0) score += 20;
+                            return score;
+                          })()}%`
+                        }}
+                      />
+                    </div>
+                  </div>
                 </>
               )}
             </div>
