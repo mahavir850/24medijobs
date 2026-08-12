@@ -710,7 +710,7 @@ const EmployerDashboard = ({
 
 interface JobPostingWizardProps {
   profile: any;
-  onPublish: (jobObj: any) => void;
+  onPublish: (jobObj: any, profileData?: any) => void;
   onCancel: () => void;
 }
 
@@ -846,7 +846,19 @@ const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProp
       posted: 'Just now',
     };
 
-    onPublish(newJobObj);
+    const profileData = {
+      name: recruiterName || profile?.name || 'HR Manager',
+      email: emailForVerification || profile?.email || 'hr@digiphlox.com',
+      businessName: companyName || profile?.businessName || 'DigiPhlox',
+      businessType: postingAs === 'company' ? 'company' : 'consultancy',
+      industry: industry,
+      pincode: pincode,
+      address: companyAddress,
+      password: password,
+      phone: recruiterPhone || profile?.phone || '9876543210'
+    };
+
+    onPublish(newJobObj, profileData);
   };
 
   const stepsList = [
@@ -2113,11 +2125,35 @@ export default function EmployerCTA({
         }
       } else {
         if (error) console.error('Error fetching employer profile:', error);
-        setCurrentPage('profile-setup');
+        
+        if (selectedPlan && selectedPlan.price === 0) {
+          // New user choosing Free plan: bypass profile setup, go straight to wizard
+          setEmployerProfile({
+            name: 'HR Manager',
+            email: 'hr@digiphlox.com',
+            businessName: 'DigiPhlox',
+            logo: '🏥',
+            phone: phone || '9876543210'
+          });
+          setCurrentPage('job-details');
+        } else {
+          setCurrentPage('profile-setup');
+        }
       }
     } catch (err) {
       console.error(err);
-      setCurrentPage('profile-setup');
+      if (selectedPlan && selectedPlan.price === 0) {
+        setEmployerProfile({
+          name: 'HR Manager',
+          email: 'hr@digiphlox.com',
+          businessName: 'DigiPhlox',
+          logo: '🏥',
+          phone: '9876543210'
+        });
+        setCurrentPage('job-details');
+      } else {
+        setCurrentPage('profile-setup');
+      }
     }
   };
 
@@ -2126,7 +2162,29 @@ export default function EmployerCTA({
     setCurrentPage(nextPage);
   };
 
-  const handlePublish = async (newJobObj: any) => {
+  const handlePublish = async (newJobObj: any, profileData?: any) => {
+    if (profileData) {
+      try {
+        const empData = {
+          id: profileData.phone,
+          name: profileData.name,
+          email: profileData.email,
+          business_name: profileData.businessName,
+          business_type: profileData.businessType,
+          industry: profileData.industry,
+          pincode: profileData.pincode,
+          address: profileData.address,
+          password: profileData.password,
+          logo: '🏥',
+          phone: profileData.phone
+        };
+        await supabase.from('employer_profiles').upsert(empData);
+        setEmployerProfile(profileData);
+      } catch (err) {
+        console.error('Error saving employer profile in publish:', err);
+      }
+    }
+
     try {
       const { data, error } = await supabase
         .from('jobs')
