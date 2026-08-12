@@ -1788,21 +1788,22 @@ export default function EmployerCTA({
   jobs, 
   setJobs, 
   employerProfile, 
-  setEmployerProfile 
-}: EmployerCTAProps) {
+  setEmployerProfile,
+  initialStep
+}: EmployerCTAProps & { initialStep?: 'pricing' | 'login' }) {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const [currentPage, setCurrentPage] = useState<'home' | 'pricing' | 'login' | 'profile-setup' | 'pay-now' | 'job-details' | 'location' | 'compensation' | 'requirements' | 'interviewer' | 'preview' | 'publish'>(employerProfile ? 'home' : 'pricing');
+  const [currentPage, setCurrentPage] = useState<'home' | 'pricing' | 'login' | 'profile-setup' | 'pay-now' | 'job-details' | 'location' | 'compensation' | 'requirements' | 'interviewer' | 'preview' | 'publish'>(employerProfile ? 'home' : (initialStep || 'pricing'));
   const [jobData, setJobData] = useState<any>({});
   const [tempEmployerPhone, setTempEmployerPhone] = useState('');
   const [selectedPlan, setSelectedPlan] = useState<{ name: string; price: number } | null>(null);
 
   useEffect(() => {
     if (!employerProfile) {
-      setCurrentPage('pricing');
+      setCurrentPage(initialStep || 'pricing');
     } else if (currentPage === 'login' || currentPage === 'pricing' || currentPage === 'pay-now') {
       setCurrentPage('home');
     }
-  }, [employerProfile]);
+  }, [employerProfile, initialStep]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(

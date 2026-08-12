@@ -101,9 +101,10 @@ interface EmployersPageProps {
   setJobs: React.Dispatch<React.SetStateAction<any[]>>
   employerProfile: any
   setEmployerProfile: (profile: any) => void
+  initialStep?: 'pricing' | 'login'
 }
 
-function EmployersPage({ onNavigate, jobs, setJobs, employerProfile, setEmployerProfile }: EmployersPageProps) {
+function EmployersPage({ onNavigate, jobs, setJobs, employerProfile, setEmployerProfile, initialStep }: EmployersPageProps) {
   return (
     <div className="min-h-screen bg-[#f0f5ff] pt-20">
       <div className="hero-bg py-14 px-4 sm:px-6 text-center">
@@ -118,6 +119,7 @@ function EmployersPage({ onNavigate, jobs, setJobs, employerProfile, setEmployer
           setJobs={setJobs} 
           employerProfile={employerProfile} 
           setEmployerProfile={setEmployerProfile} 
+          initialStep={initialStep}
         />
       </div>
     </div>
@@ -477,6 +479,18 @@ export default function App() {
             setJobs={setJobs} 
             employerProfile={employerProfile} 
             setEmployerProfile={setEmployerProfile} 
+            initialStep="pricing"
+          />
+        )
+      case 'employers-login': 
+        return (
+          <EmployersPage 
+            onNavigate={navigate} 
+            jobs={jobs} 
+            setJobs={setJobs} 
+            employerProfile={employerProfile} 
+            setEmployerProfile={setEmployerProfile} 
+            initialStep="login"
           />
         )
       case 'about': return <AboutPage />

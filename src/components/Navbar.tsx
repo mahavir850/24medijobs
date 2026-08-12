@@ -93,7 +93,7 @@ export default function Navbar({
     return (
       <div className="flex items-center gap-3">
         <button
-          onClick={() => onNavigate('employers')}
+          onClick={() => onNavigate('employers-login')}
           className={`text-sm font-semibold px-5 py-2.5 rounded-lg transition-all duration-200 border ${
             scrolled
               ? 'border-[#0d2b6b] text-[#0d2b6b] hover:bg-[#0d2b6b] hover:text-white'
@@ -168,7 +168,7 @@ export default function Navbar({
     return (
       <div className="flex gap-3 pt-2">
         <button
-          onClick={() => { onNavigate('employers'); setMobileOpen(false) }}
+          onClick={() => { onNavigate('employers-login'); setMobileOpen(false) }}
           className="flex-1 text-sm font-semibold px-4 py-2.5 rounded-lg border border-[#0d2b6b] text-[#0d2b6b]"
         >
           Employer Login
