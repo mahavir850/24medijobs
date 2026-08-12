@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import logo from '@/imports/medijob.jpeg'
+import { supabase } from '../supabaseClient'
 
 function NavLogo() {
   return (
@@ -38,6 +39,28 @@ export default function Navbar({
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  const handleNavbarLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file && employerProfile) {
+      const reader = new FileReader()
+      reader.onloadend = async () => {
+        const base64 = reader.result as string
+        const updated = { ...employerProfile, logo: base64 }
+        if (setEmployerProfile) setEmployerProfile(updated)
+        
+        try {
+          await supabase
+            .from('employer_profiles')
+            .update({ logo: base64 })
+            .eq('id', employerProfile.email || employerProfile.phone)
+        } catch (err) {
+          console.error('Error updating company logo:', err)
+        }
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
   const navLinks = [
     { label: 'Home', page: 'home' },
     { label: 'Find Jobs', page: 'jobs' },
@@ -49,18 +72,49 @@ export default function Navbar({
     if (employerProfile) {
       return (
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-[#00b4a0]/5 px-3 py-1.5 rounded-xl border border-[#00b4a0]/25">
-            <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-[#00b4a0]">
-              <img src={employerProfile.logo} alt="Logo" className="w-full h-full object-cover" />
+          <div className="flex items-center gap-2.5 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/20 shadow-sm">
+            
+            {/* Clickable Recruiter Logo */}
+            <label 
+              htmlFor="navbar-logo-input" 
+              className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-white/40 cursor-pointer relative group block shadow-sm"
+              title="Click to edit logo"
+            >
+              {employerProfile.logo && employerProfile.logo.length > 4 ? (
+                <img src={employerProfile.logo} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                <span className="w-full h-full flex items-center justify-center bg-blue-50 text-xs font-black">🏥</span>
+              )}
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-150">
+                <span className="text-[7px] text-white font-black uppercase tracking-wider">Edit</span>
+              </div>
+            </label>
+            <input 
+              id="navbar-logo-input"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleNavbarLogoChange}
+            />
+
+            <div className="flex flex-col text-left">
+              <span className={`text-xs font-black truncate max-w-[120px] leading-tight ${scrolled ? 'text-[#0d2b6b]' : 'text-white'}`}>
+                {employerProfile.businessName}
+              </span>
+              {employerProfile.gstNumber && (
+                <span className="text-[8px] font-black text-gray-400 truncate max-w-[120px] mt-0.5 leading-none uppercase tracking-wide">
+                  Reg: {employerProfile.gstNumber}
+                </span>
+              )}
             </div>
-            <span className="text-xs font-bold text-[#0d2b6b] truncate max-w-[130px]">{employerProfile.businessName}</span>
           </div>
+
           <button
             onClick={() => {
               if (setEmployerProfile) setEmployerProfile(null)
               onNavigate('home')
             }}
-            className="text-xs font-bold text-red-500 bg-red-50 px-3.5 py-2.5 rounded-lg hover:bg-red-100 transition-colors border border-red-100"
+            className="text-xs font-bold text-red-500 bg-red-50 px-3.5 py-2.5 rounded-lg hover:bg-red-100 transition-colors border border-red-100 cursor-pointer"
           >
             Sign Out
           </button>
@@ -136,13 +190,35 @@ export default function Navbar({
     if (employerProfile) {
       return (
         <div className="flex flex-col gap-2 pt-2">
-          <div className="flex items-center gap-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
-            <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 border border-[#00b4a0]">
-              <img src={employerProfile.logo} alt="Logo" className="w-full h-full object-cover" />
-            </div>
-            <div className="text-left">
-              <p className="text-xs font-bold text-[#0d2b6b]">{employerProfile.businessName}</p>
-              <p className="text-[10px] text-gray-500">{employerProfile.name} ({employerProfile.designation})</p>
+          <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
+            
+            {/* Clickable Mobile Recruiter Logo */}
+            <label 
+              htmlFor="mobile-navbar-logo-input" 
+              className="w-9 h-9 rounded-full overflow-hidden shrink-0 border border-[#00b4a0] relative group cursor-pointer block"
+              title="Click to edit logo"
+            >
+              {employerProfile.logo && employerProfile.logo.length > 4 ? (
+                <img src={employerProfile.logo} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                <span className="w-full h-full flex items-center justify-center bg-blue-100 text-xs font-bold">🏥</span>
+              )}
+            </label>
+            <input 
+              id="mobile-navbar-logo-input"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleNavbarLogoChange}
+            />
+
+            <div className="text-left min-w-0 flex-1">
+              <p className="text-xs font-black text-[#0d2b6b] truncate">{employerProfile.businessName}</p>
+              {employerProfile.gstNumber && (
+                <p className="text-[8px] font-black text-gray-400 uppercase tracking-wide mt-0.5 truncate">
+                  Reg: {employerProfile.gstNumber}
+                </p>
+              )}
             </div>
           </div>
           <button
@@ -151,7 +227,7 @@ export default function Navbar({
               setMobileOpen(false)
               onNavigate('home')
             }}
-            className="w-full text-center text-sm font-bold text-red-500 bg-red-50 py-2.5 rounded-lg border border-red-100"
+            className="w-full text-center text-sm font-bold text-red-500 bg-red-50 py-2.5 rounded-lg border border-red-100 cursor-pointer"
           >
             Sign Out
           </button>
