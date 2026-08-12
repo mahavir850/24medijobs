@@ -1779,15 +1779,16 @@ function PricingScreen({ onSelectPlan }: { onSelectPlan: (plan: { name: string; 
   );
 }
 
-// ── CUSTOM SUB-COMPONENT: CONTINUE PURCHASE LOGIN SCREEN ──
 function PurchaseLoginScreen({ 
   onLogin, 
   onRegister, 
-  planName 
+  planName,
+  hasSelectedPlan
 }: { 
   onLogin: (phone: string) => void; 
   onRegister: () => void; 
-  planName: string 
+  planName: string;
+  hasSelectedPlan: boolean;
 }) {
   const [phone, setPhone] = useState('');
   const [googleLoggingIn, setGoogleLoggingIn] = useState(false);
@@ -1808,13 +1809,17 @@ function PurchaseLoginScreen({
   return (
     <div className="py-16 bg-[#f0f5ff] min-h-screen flex items-center justify-center">
       <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-xl border border-gray-100 text-center mx-4">
-        <span className="text-[#00b4a0] bg-[#00b4a0]/10 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-wider">Purchase Flow</span>
+        <span className="text-[#00b4a0] bg-[#00b4a0]/10 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-wider">
+          {hasSelectedPlan ? 'Purchase Flow' : 'Recruiter Sign In'}
+        </span>
         <h2 className="text-2xl font-black text-[#0d1b3e] mt-4 mb-2">Find & Hire the Right Talent With Us</h2>
         <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-6">Trusted by 9 Cr+ candidates | 5 Lakh+ employers</p>
 
-        <div className="bg-blue-50/50 border border-blue-100/50 rounded-2xl p-4 mb-6">
-          <p className="text-xs font-bold text-gray-700">Continuing purchase for: <span className="text-[#0d2b6b] font-black">{planName} Plan</span></p>
-        </div>
+        {hasSelectedPlan && (
+          <div className="bg-blue-50/50 border border-blue-100/50 rounded-2xl p-4 mb-6">
+            <p className="text-xs font-bold text-gray-700">Continuing purchase for: <span className="text-[#0d2b6b] font-black">{planName} Plan</span></p>
+          </div>
+        )}
 
         <div className="space-y-6">
           {/* New User registration CTA */}
@@ -2244,6 +2249,7 @@ export default function EmployerCTA({
         return (
           <PurchaseLoginScreen 
             planName={selectedPlan?.name || 'Free'}
+            hasSelectedPlan={!!selectedPlan}
             onLogin={handleLogin}
             onRegister={() => setCurrentPage('profile-setup')}
           />
