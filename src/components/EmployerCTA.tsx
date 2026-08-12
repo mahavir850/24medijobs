@@ -2056,9 +2056,13 @@ export default function EmployerCTA({
     if (!employerProfile) {
       setCurrentPage(initialStep || 'pricing');
     } else if (currentPage === 'login' || currentPage === 'pricing' || currentPage === 'pay-now') {
-      setCurrentPage('home');
+      if (selectedPlan && selectedPlan.price === 0) {
+        setCurrentPage('job-details');
+      } else {
+        setCurrentPage('home');
+      }
     }
-  }, [employerProfile, initialStep]);
+  }, [employerProfile, initialStep, selectedPlan, currentPage]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
