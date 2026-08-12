@@ -708,7 +708,6 @@ const EmployerDashboard = ({
   );
 };
 
-// ===================== JOB POSTING WIZARD COMPONENT =====================
 interface JobPostingWizardProps {
   profile: any;
   onPublish: (jobObj: any) => void;
@@ -716,43 +715,56 @@ interface JobPostingWizardProps {
 }
 
 const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProps) => {
-  const [step, setStep] = useState(0); // 0: Details, 1: Preferences, 2: Screening, 3: Description, 4: Communication
+  const [step, setStep] = useState(0); // 0: Details, 1: Preferences, 2: Screening, 3: Description, 4: Communication, 5: Create Profile
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
   const [emailForVerification, setEmailForVerification] = useState(profile?.email || 'hr@digiphlox.com');
   const [isEditingEmail, setIsEditingEmail] = useState(false);
 
-  // Form states
+  // Step 0: Job Details States
   const [postingAs, setPostingAs] = useState<'company' | 'consultancy'>('company');
   const [companyName, setCompanyName] = useState(profile?.businessName || 'DigiPhlox');
+  const [companyRegisterNumber, setCompanyRegisterNumber] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [minExp, setMinExp] = useState('Min exp.');
   const [maxExp, setMaxExp] = useState('Max exp.');
-  const [freshersApply, setFreshersApply] = useState(false);
   const [minSalary, setMinSalary] = useState('');
   const [maxSalary, setMaxSalary] = useState('');
   const [selectedPerks, setSelectedPerks] = useState<string[]>([]);
-  
+  const [searchPerkQuery, setSearchPerkQuery] = useState('');
+
+  // Step 1: Candidate Preferences States
   const [department, setDepartment] = useState('Ex. Sales & Marketing');
   const [jobLocation, setJobLocation] = useState('');
-  const [qualification, setQualification] = useState('Graduate'); // '12th Pass' | 'Diploma' | 'Graduate' | 'Post-Graduate'
-  const [gender, setGender] = useState('Any'); // 'Any' | 'Male' | 'Female'
+  const [qualification, setQualification] = useState('Graduate');
+  const [gender, setGender] = useState('Any');
   const [skills, setSkills] = useState('');
 
+  // Step 2: Screening Questions States
   const [questions, setQuestions] = useState<string[]>([]);
   const [customQuestion, setCustomQuestion] = useState('');
 
+  // Step 3: Job Description States
   const defaultTemplate = `Responsibilities:
 * Collaborate with cross-functional teams on campaigns & initiatives
 * Analyze performance metrics, optimize strategies
 * Manage social media presence & create engaging content`;
-
   const [jobDescription, setJobDescription] = useState(defaultTemplate);
   const [companyAbout, setCompanyAbout] = useState('');
 
-  const [receiveMethod, setReceiveMethod] = useState<'email' | 'whatsapp'>('email');
-  const [recruiterEmail, setRecruiterEmail] = useState(profile?.email || 'hr@digiphlox.com');
+  // Step 4: Communication Preferences States
+  const [allowCalls, setAllowCalls] = useState<'yes' | 'no'>('yes');
+  const [recruiterName, setRecruiterName] = useState(profile?.name || 'HR Manager');
   const [recruiterPhone, setRecruiterPhone] = useState(profile?.phone || '9876543210');
+  const [callStart, setCallStart] = useState('09:30 am');
+  const [callEnd, setCallEnd] = useState('06:30 pm');
+  const [callDays, setCallDays] = useState('Mon-Fri');
+
+  // Step 5: Profile Creation States
+  const [industry, setIndustry] = useState('');
+  const [pincode, setPincode] = useState('');
+  const [companyAddress, setCompanyAddress] = useState('');
+  const [password, setPassword] = useState('');
 
   const perksSuggestions = ['Office cab', 'Health insurance', 'Flexible hours', 'Free meals', 'PF Contribution', 'Performance Bonus'];
   const screeningSuggestions = [
@@ -767,12 +779,12 @@ const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProp
   const handleNext = () => {
     if (step === 0) {
       if (!jobTitle.trim()) {
-        alert('Please enter a Job Title to continue.');
+        alert('Please enter a Job Title (e.g. Ex. Sales manager) to continue.');
         return;
       }
-      setShowOtpModal(true); // Trigger verification modal before step 1
+      setShowOtpModal(true);
     } else {
-      setStep(prev => Math.min(prev + 1, 4));
+      setStep(prev => Math.min(prev + 1, 5));
     }
   };
 
@@ -782,7 +794,7 @@ const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProp
 
   const handleOtpVerifySubmit = () => {
     setShowOtpModal(false);
-    setStep(1); // Proceed to Candidate preferences step
+    setStep(1); // Proceed to Candidate preferences
   };
 
   const handleAddPerk = (perk: string) => {
@@ -810,19 +822,26 @@ const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProp
     setQuestions(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handlePostJobAction = () => {
+  const handlePostJobLiveSubmit = () => {
+    if (step === 5) {
+      if (!industry || !pincode || !companyAddress || !password) {
+        alert('Please complete all company profile details to activate the job.');
+        return;
+      }
+    }
+
     const salaryStr = minSalary && maxSalary ? `₹${Number(minSalary).toLocaleString('en-IN')}–₹${Number(maxSalary).toLocaleString('en-IN')}/mo` : 'Negotiable';
-    const expStr = minExp === '0 (Fresher)' ? 'Fresher' : `${minExp}–${maxExp} yrs`;
+    const expStr = minExp === '0' ? 'Fresher' : `${minExp}–${maxExp} yrs`;
     const typeStr = 'Full-time';
 
     const newJobObj = {
-      title: jobTitle || 'Medical Specialist',
-      hospital: companyName || profile?.businessName || 'Verified Organization',
-      location: jobLocation || 'Delhi NCR',
+      title: jobTitle || 'Senior Digital Marketing Executive',
+      hospital: companyName || 'DigiPhlox',
+      location: jobLocation || 'Haldwani',
       type: typeStr,
       salary: salaryStr,
       exp: expStr,
-      specialty: department || 'Doctors',
+      specialty: department || 'Ex. Sales & Marketing',
       logo: profile?.logo || '🏥',
       posted: 'Just now',
     };
@@ -842,7 +861,7 @@ const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProp
     <div className="min-h-screen bg-gray-50/50 py-10 flex justify-center items-start px-4">
       <div className="max-w-6xl w-full bg-white rounded-3xl border border-gray-100 shadow-xl overflow-hidden grid md:grid-cols-4 min-h-[70vh]">
         
-        {/* Left Sidebar (Progress steps) */}
+        {/* Left Sidebar Steps */}
         <div className="bg-[#f8fafc] border-r border-gray-100 p-8 space-y-8 md:col-span-1 shrink-0">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-[#0d1b3e] font-black text-lg tracking-wide">Post a job</span>
@@ -875,28 +894,29 @@ const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProp
           </div>
         </div>
 
-        {/* Right content viewports */}
+        {/* Right pane */}
         <div className="md:col-span-3 p-8 flex flex-col justify-between relative">
           
           <div className="space-y-6 flex-1 pb-10">
-            {/* ── STEP 0: JOB DETAILS ── */}
+            
+            {/* STEP 0: JOB DETAILS */}
             {step === 0 && (
               <div className="space-y-5">
                 <div>
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">You're posting this job as a:</label>
                   <div className="flex gap-2">
-                    {['company', 'consultancy'].map((type) => (
+                    {['company', 'consultancy'].map((t) => (
                       <button
-                        key={type}
+                        key={t}
                         type="button"
-                        onClick={() => setPostingAs(type as any)}
+                        onClick={() => setPostingAs(t as any)}
                         className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
-                          postingAs === type 
+                          postingAs === t 
                             ? 'bg-[#0d2b6b] text-white shadow-sm border border-[#0d2b6b]'
                             : 'bg-gray-100 hover:bg-gray-200 text-gray-500 border border-transparent'
                         }`}
                       >
-                        {type === 'company' ? 'Company/Business' : 'Consultancy'}
+                        {t === 'company' ? 'Company/Business' : 'Consultancy'}
                       </button>
                     ))}
                   </div>
@@ -914,19 +934,29 @@ const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProp
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Job title</label>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Your company register number</label>
                   <input
                     type="text"
-                    required
-                    value={jobTitle}
-                    onChange={(e) => setJobTitle(e.target.value)}
-                    placeholder="Enter job title (e.g. Senior Digital Marketing Executive)"
+                    value={companyRegisterNumber}
+                    onChange={(e) => setCompanyRegisterNumber(e.target.value)}
+                    placeholder="Enter registration or license number (optional)"
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Work experience (Years)</label>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Job title</label>
+                  <input
+                    type="text"
+                    value={jobTitle}
+                    onChange={(e) => setJobTitle(e.target.value)}
+                    placeholder="Ex. Sales manager"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Work experience</label>
                   <div className="flex items-center gap-3">
                     <select
                       value={minExp}
@@ -939,7 +969,6 @@ const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProp
                       <option value="2">2 years</option>
                       <option value="3">3 years</option>
                       <option value="5">5 years</option>
-                      <option value="8">8+ years</option>
                     </select>
                     <span className="text-xs text-gray-400 font-bold uppercase">to</span>
                     <select
@@ -953,18 +982,7 @@ const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProp
                       <option value="3">3 years</option>
                       <option value="5">5 years</option>
                       <option value="10">10 years</option>
-                      <option value="15">15+ years</option>
                     </select>
-                  </div>
-                  <div className="flex items-center gap-2 mt-2 px-1">
-                    <input
-                      type="checkbox"
-                      id="freshersApply"
-                      checked={freshersApply}
-                      onChange={(e) => setFreshersApply(e.target.checked)}
-                      className="rounded accent-[#0d2b6b] border-gray-300"
-                    />
-                    <label htmlFor="freshersApply" className="text-[11px] text-gray-500 font-semibold cursor-pointer">Freshers can also apply</label>
                   </div>
                 </div>
 
@@ -991,6 +1009,13 @@ const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProp
 
                 <div>
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Perks and benefits (Optional)</label>
+                  <input
+                    type="text"
+                    value={searchPerkQuery}
+                    onChange={(e) => setSearchPerkQuery(e.target.value)}
+                    placeholder="Search for perks and benefits"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors mb-3"
+                  />
                   <div className="flex flex-wrap gap-1.5">
                     {perksSuggestions.map((perk) => {
                       const isSelected = selectedPerks.includes(perk);
@@ -1001,7 +1026,7 @@ const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProp
                           onClick={() => handleAddPerk(perk)}
                           className={`px-3 py-1.5 rounded-full text-[10px] font-black transition-all cursor-pointer ${
                             isSelected 
-                              ? 'bg-[#0d2b6b] text-white shadow-sm border border-[#0d2b6b]'
+                              ? 'bg-[#0d2b6b] text-white border border-[#0d2b6b]'
                               : 'bg-[#f0f5ff] hover:bg-blue-100 text-[#0d2b6b] border border-transparent'
                           }`}
                         >
@@ -1014,7 +1039,7 @@ const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProp
               </div>
             )}
 
-            {/* ── STEP 1: CANDIDATE PREFERENCES ── */}
+            {/* STEP 1: CANDIDATE PREFERENCES */}
             {step === 1 && (
               <div className="space-y-5">
                 <div>
@@ -1029,7 +1054,6 @@ const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProp
                     <option value="Nurses">Nursing Staff</option>
                     <option value="Pharmacy">Pharmacy</option>
                     <option value="Radiology">Radiology & Imaging</option>
-                    <option value="Diagnostics">Diagnostics & Lab</option>
                   </select>
                   <div className="flex flex-wrap gap-1.5 mt-2.5">
                     {['Digital Marketing', 'Marketing', 'Corporate Communication'].map((dept) => (
@@ -1109,7 +1133,7 @@ const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProp
               </div>
             )}
 
-            {/* ── STEP 2: SCREENING QUESTIONS ── */}
+            {/* STEP 2: SCREENING QUESTIONS */}
             {step === 2 && (
               <div className="space-y-5">
                 <div className="flex justify-between items-center mb-2">
@@ -1165,7 +1189,7 @@ const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProp
               </div>
             )}
 
-            {/* ── STEP 3: JOB DESCRIPTION ── */}
+            {/* STEP 3: JOB DESCRIPTION */}
             {step === 3 && (
               <div className="space-y-5">
                 <div className="bg-blue-50/40 border border-blue-100/60 text-[#0d2b6b] p-3.5 rounded-xl text-xs font-semibold flex gap-2">
@@ -1184,7 +1208,6 @@ const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProp
                     </button>
                   </div>
 
-                  {/* Rich Text mock toolbar */}
                   <div className="border border-gray-200 rounded-t-xl bg-gray-50/50 p-2 flex gap-3 border-b-0">
                     {['B', 'I', 'U', '• List', '1. List'].map((tool) => (
                       <button
@@ -1215,80 +1238,193 @@ const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProp
                     type="text"
                     value={companyAbout}
                     onChange={(e) => setCompanyAbout(e.target.value)}
-                    placeholder="e.g. DigiPhlox is a high-growth creative agency specialized in clinical brandings."
+                    placeholder="e.g. DigiPhlox is a healthcare creative agency..."
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
                   />
                 </div>
               </div>
             )}
 
-            {/* ── STEP 4: COMMUNICATION PREFERENCES ── */}
+            {/* STEP 4: COMMUNICATION PREFERENCES */}
             {step === 4 && (
               <div className="space-y-5">
                 <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">How do you want to receive applications?</label>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Allow candidates to call you directly for this job?</label>
                   <div className="flex gap-2">
-                    {['email', 'whatsapp'].map((method) => (
+                    {['yes', 'no'].map((option) => (
                       <button
-                        key={method}
+                        key={option}
                         type="button"
-                        onClick={() => setReceiveMethod(method as any)}
-                        className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
-                          receiveMethod === method 
+                        onClick={() => setAllowCalls(option as any)}
+                        className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                          allowCalls === option 
                             ? 'bg-[#0d2b6b] text-white border border-[#0d2b6b]'
                             : 'bg-gray-100 hover:bg-gray-200 text-gray-500 border border-transparent'
                         }`}
                       >
-                        {method === 'email' ? 'Recruiter Email' : 'WhatsApp / Phone'}
+                        {option === 'yes' ? 'Yes' : 'No'}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {receiveMethod === 'email' ? (
-                  <div>
-                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Contact email for recruiter</label>
-                    <input
-                      type="email"
-                      value={recruiterEmail}
-                      onChange={(e) => setRecruiterEmail(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
-                    />
-                  </div>
-                ) : (
-                  <div>
-                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Contact phone for recruiter</label>
-                    <input
-                      type="tel"
-                      value={recruiterPhone}
-                      onChange={(e) => setRecruiterPhone(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
-                    />
+                <div className="bg-blue-50/40 border border-blue-100/60 text-[#0d2b6b] p-3 rounded-xl text-xs font-semibold">
+                  Complete KYC after posting job to get candidate calls
+                </div>
+
+                {allowCalls === 'yes' && (
+                  <div className="space-y-4 bg-gray-50 border border-gray-100 rounded-2xl p-5">
+                    <h4 className="text-xs font-black text-[#0d1b3e] uppercase tracking-wider">Candidate will be calling</h4>
+                    
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Recruiter name</label>
+                      <input
+                        type="text"
+                        value={recruiterName}
+                        onChange={(e) => setRecruiterName(e.target.value)}
+                        placeholder="HR Manager"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Mobile number</label>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-gray-400 bg-white border border-gray-200 px-3 py-2 rounded-xl">+91</span>
+                        <input
+                          type="tel"
+                          value={recruiterPhone}
+                          onChange={(e) => setRecruiterPhone(e.target.value)}
+                          placeholder="9876543210"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none bg-white"
+                        />
+                      </div>
+                      <p className="text-[9px] text-gray-400 mt-1 font-bold">You can stop receiving calls by editing the job later</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Receive calls between</label>
+                      <div className="flex items-center gap-3">
+                        <select
+                          value={callStart}
+                          onChange={(e) => setCallStart(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-semibold text-gray-600 focus:outline-none outline-none focus:border-[#0d2b6b] bg-white"
+                        >
+                          <option value="09:30 am">09:30 am</option>
+                          <option value="10:00 am">10:00 am</option>
+                          <option value="11:00 am">11:00 am</option>
+                        </select>
+                        <span className="text-xs text-gray-400 font-bold uppercase">to</span>
+                        <select
+                          value={callEnd}
+                          onChange={(e) => setCallEnd(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-semibold text-gray-600 focus:outline-none outline-none focus:border-[#0d2b6b] bg-white"
+                        >
+                          <option value="06:30 pm">06:30 pm</option>
+                          <option value="05:00 pm">05:00 pm</option>
+                          <option value="07:00 pm">07:00 pm</option>
+                        </select>
+                      </div>
+                      <div className="mt-3">
+                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Days</label>
+                        <input
+                          type="text"
+                          value={callDays}
+                          onChange={(e) => setCallDays(e.target.value)}
+                          placeholder="Mon-Fri"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none bg-white"
+                        />
+                      </div>
+                      <p className="text-[10px] text-gray-400/90 leading-relaxed mt-4 bg-white border border-gray-200/50 rounded-xl p-3">
+                        ℹ️ Naukri allows job seekers call you only during your specified availability, but they may call anytime once they have your number.
+                      </p>
+                    </div>
                   </div>
                 )}
+              </div>
+            )}
 
-                <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 mt-6">
-                  <h4 className="text-sm font-black text-[#0d1b3e] mb-2">Job Post Preview Card</h4>
-                  <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 border border-gray-100 flex items-center justify-center text-xl shrink-0">
-                      🏥
+            {/* STEP 5: CREATE PROFILE & MAKE JOB LIVE */}
+            {step === 5 && (
+              <div className="space-y-6">
+                <div className="bg-[#f0f5ff] border border-blue-100 rounded-2xl p-5">
+                  <h3 className="text-base font-black text-[#0d2b6b]">{jobTitle || 'Senior Digital Marketing Executive'}</h3>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mt-2 font-semibold">
+                    <span>⏱ {minExp}–{maxExp} years</span>
+                    <span>₹ {minSalary && maxSalary ? `${Number(minSalary).toLocaleString('en-IN')}–${Number(maxSalary).toLocaleString('en-IN')}/month` : 'Negotiable'}</span>
+                    <span>📍 {jobLocation || 'Haldwani'}</span>
+                  </div>
+                </div>
+
+                <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 space-y-4">
+                  <div className="border-b border-gray-100 pb-3">
+                    <h4 className="text-lg font-black text-[#0d1b3e]">Create profile</h4>
+                    <p className="text-xs text-gray-400 mt-0.5">Create your profile to make this job live</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="bg-gray-50 p-4 rounded-xl text-xs space-y-1 font-semibold text-gray-600">
+                      <p>Company: <span className="text-[#0d1b3e] font-bold">{companyName}</span></p>
+                      <p>Email: <span className="text-[#0d1b3e] font-bold">{emailForVerification}</span></p>
+                      {companyRegisterNumber && <p>Reg No: <span className="text-[#0d1b3e] font-bold">{companyRegisterNumber}</span></p>}
                     </div>
+
                     <div>
-                      <h5 className="font-bold text-[#0d1b3e] text-sm">{jobTitle || 'Medical Staff Post'}</h5>
-                      <p className="text-[11px] text-gray-400 font-semibold mt-0.5">{companyName}</p>
-                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-[#5a6a8a] mt-2 font-medium">
-                        <span>📍 {jobLocation || 'Delhi NCR'}</span>
-                        <span>⏱ Full-time</span>
-                        <span>🎓 Exp: {minExp}–{maxExp} yrs</span>
-                      </div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Industry</label>
+                      <select
+                        value={industry}
+                        onChange={(e) => setIndustry(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl text-xs font-semibold text-gray-600 focus:outline-none outline-none focus:border-[#0d2b6b] bg-transparent"
+                      >
+                        <option value="">Select industry</option>
+                        <option value="Healthcare">Healthcare & Medicine</option>
+                        <option value="Marketing">Marketing & Advertising</option>
+                        <option value="Technology">Technology & Software</option>
+                        <option value="Education">Education & Training</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Pin code</label>
+                      <input
+                        type="text"
+                        value={pincode}
+                        onChange={(e) => setPincode(e.target.value)}
+                        placeholder="Enter company pincode"
+                        maxLength={6}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Company address</label>
+                      <input
+                        type="text"
+                        value={companyAddress}
+                        onChange={(e) => setCompanyAddress(e.target.value)}
+                        placeholder="Enter company address"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Create password</label>
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter new password"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                      />
                     </div>
                   </div>
                 </div>
               </div>
             )}
+
           </div>
 
-          {/* Footer Navigation Actions */}
+          {/* Footer Actions */}
           <div className="flex justify-between items-center border-t border-gray-100 pt-4 shrink-0">
             {step > 0 ? (
               <button
@@ -1308,7 +1444,7 @@ const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProp
               </button>
             )}
 
-            {step < 4 ? (
+            {step < 5 ? (
               <button
                 type="button"
                 onClick={handleNext}
@@ -1319,22 +1455,21 @@ const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProp
             ) : (
               <button
                 type="button"
-                onClick={handlePostJobAction}
-                className="bg-[#22c36a] hover:bg-[#1db05d] text-white font-bold px-8 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-md"
+                onClick={handlePostJobLiveSubmit}
+                className="bg-[#22c36a] hover:bg-[#1db05d] text-white font-black px-8 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-md"
               >
-                Post Job Live
+                Make this job live
               </button>
             )}
           </div>
         </div>
       </div>
 
-      {/* ── EMAIL VERIFICATION MODAL POPUP (Image 2) ── */}
+      {/* EMAIL VERIFICATION MODAL POPUP */}
       {showOtpModal && (
         <div className="fixed inset-0 z-50 bg-[#0d1b3e]/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative border border-gray-100 text-center">
             
-            {/* Close modal */}
             <button
               onClick={() => setShowOtpModal(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold p-1 transition-colors"
@@ -1361,7 +1496,7 @@ const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProp
                     <span className="text-[#0d2b6b] font-black">{emailForVerification}</span>
                     <button
                       onClick={() => setIsEditingEmail(true)}
-                      className="text-xs text-gray-400 hover:text-gray-600"
+                      className="text-xs text-gray-400 hover:text-[#0d2b6b]"
                     >
                       ✏️
                     </button>
@@ -1370,7 +1505,6 @@ const JobPostingWizard = ({ profile, onPublish, onCancel }: JobPostingWizardProp
               </p>
             </div>
 
-            {/* Digits verification inputs */}
             <div className="flex gap-2 justify-center my-6">
               {otpDigits.map((digit, i) => (
                 <input
@@ -1968,9 +2102,10 @@ export default function EmployerCTA({
         
         if (selectedPlan && selectedPlan.price > 0) {
           setCurrentPage('pay-now');
+        } else if (selectedPlan && selectedPlan.price === 0) {
+          setCurrentPage('job-details');
         } else {
           setCurrentPage('home');
-          onNavigate('jobs');
         }
       } else {
         if (error) console.error('Error fetching employer profile:', error);
@@ -2083,9 +2218,10 @@ export default function EmployerCTA({
               
               if (selectedPlan && selectedPlan.price > 0) {
                 setCurrentPage('pay-now');
+              } else if (selectedPlan && selectedPlan.price === 0) {
+                setCurrentPage('job-details');
               } else {
                 setCurrentPage('home');
-                onNavigate('jobs');
               }
             }} 
             onBack={() => setCurrentPage('pricing')} 
