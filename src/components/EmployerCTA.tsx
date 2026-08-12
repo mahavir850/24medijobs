@@ -2390,33 +2390,38 @@ export default function EmployerCTA({
       } else {
         if (error) console.error('Error fetching employer profile:', error);
         
-        if (selectedPlan && selectedPlan.price === 0) {
-          // New user choosing Free plan: bypass profile setup, go straight to wizard
-          setEmployerProfile({
-            name: 'HR Manager',
-            email: 'hr@digiphlox.com',
-            businessName: 'DigiPhlox',
-            logo: '🏥',
-            phone: phone || '9876543210'
-          });
-          setCurrentPage('job-details');
-        } else {
-          setCurrentPage('profile-setup');
-        }
-      }
-    } catch (err) {
-      console.error(err);
-      if (selectedPlan && selectedPlan.price === 0) {
+        // Setup temporary default profile for new recruiters to log them in instantly
         setEmployerProfile({
           name: 'HR Manager',
           email: 'hr@digiphlox.com',
           businessName: 'DigiPhlox',
           logo: '🏥',
-          phone: '9876543210'
+          phone: phone || '9876543210'
         });
+
+        if (selectedPlan && selectedPlan.price > 0) {
+          setCurrentPage('pay-now');
+        } else if (selectedPlan && selectedPlan.price === 0) {
+          setCurrentPage('job-details');
+        } else {
+          setCurrentPage('home'); // Go to recruiter dashboard
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      setEmployerProfile({
+        name: 'HR Manager',
+        email: 'hr@digiphlox.com',
+        businessName: 'DigiPhlox',
+        logo: '🏥',
+        phone: '9876543210'
+      });
+      if (selectedPlan && selectedPlan.price > 0) {
+        setCurrentPage('pay-now');
+      } else if (selectedPlan && selectedPlan.price === 0) {
         setCurrentPage('job-details');
       } else {
-        setCurrentPage('profile-setup');
+        setCurrentPage('home');
       }
     }
   };
