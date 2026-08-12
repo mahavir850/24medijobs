@@ -63,6 +63,11 @@ export default function ProfilePage({ phone = '', onNavigate }: ProfilePageProps
   const [resumeUploaded, setResumeUploaded] = useState(true)
   const resumeInputRef = useRef<HTMLInputElement>(null)
 
+  // Avatar states
+  const [avatar, setAvatar] = useState<string>(() => localStorage.getItem('seeker_avatar') || '👤')
+  const [showAvatarModal, setShowAvatarModal] = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+
   // Load saved details from LocalStorage or Supabase
   useEffect(() => {
     const phoneVal = phone || localStorage.getItem('seeker_phone') || '9876543210'
@@ -120,6 +125,10 @@ export default function ProfilePage({ phone = '', onNavigate }: ProfilePageProps
               preferredLocations: data.skills ? data.skills.split(', ') : prev.preferredLocations
             }))
           }
+          if (data.avatar) {
+            setAvatar(data.avatar)
+            localStorage.setItem('seeker_avatar', data.avatar)
+          }
           setProfileSaved(true)
         }
       } catch (err) {
@@ -130,7 +139,7 @@ export default function ProfilePage({ phone = '', onNavigate }: ProfilePageProps
     loadData()
   }, [phone])
 
-  const handleSaveToDb = async (updatedBasic = basic, updatedEmp = employment, updatedEdu = education, updatedPref = preferences) => {
+  const handleSaveToDb = async (updatedBasic = basic, updatedEmp = employment, updatedEdu = education, updatedPref = preferences, updatedAvatar = avatar) => {
     const phoneVal = phone || localStorage.getItem('seeker_phone') || '9876543210'
     
     // Save to local storage
@@ -138,6 +147,7 @@ export default function ProfilePage({ phone = '', onNavigate }: ProfilePageProps
     localStorage.setItem('seeker_employment', JSON.stringify(updatedEmp))
     localStorage.setItem('seeker_education', JSON.stringify(updatedEdu))
     localStorage.setItem('seeker_preferences', JSON.stringify(updatedPref))
+    localStorage.setItem('seeker_avatar', updatedAvatar)
     localStorage.setItem('seeker_profile_completed', 'true')
 
     try {
@@ -151,7 +161,7 @@ export default function ProfilePage({ phone = '', onNavigate }: ProfilePageProps
         city: updatedEmp.city,
         state: 'Bihar',
         pincode: '800001',
-        avatar: '',
+        avatar: updatedAvatar,
         specialty: updatedEdu.specialization,
         qualification: updatedEdu.qualification,
         experience: updatedEmp.experienceYears,
@@ -177,6 +187,19 @@ export default function ProfilePage({ phone = '', onNavigate }: ProfilePageProps
       setResumeFileName(file.name)
       setResumeSize((file.size / 1024).toFixed(0) + ' KB')
       setResumeUploaded(true)
+    }
+  }
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const base64String = reader.result as string
+        setAvatar(base64String)
+        handleSaveToDb(basic, employment, education, preferences, base64String)
+      };
+      reader.readAsDataURL(file)
     }
   }
 
@@ -593,9 +616,29 @@ export default function ProfilePage({ phone = '', onNavigate }: ProfilePageProps
           <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-xl text-center relative overflow-hidden">
             <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-[#0d2b6b] to-[#00b4a0]" />
             
-            <div className="w-24 h-24 rounded-full bg-[#f0f5ff] border-4 border-blue-50 mx-auto flex items-center justify-center text-3xl shadow-sm mb-4">
-              👤
+            <div 
+              onClick={() => setShowAvatarModal(true)}
+              className="w-24 h-24 rounded-full bg-[#f0f5ff] border-4 border-blue-50 mx-auto flex items-center justify-center text-3xl shadow-sm mb-4 relative cursor-pointer overflow-hidden group"
+              title="Click to change profile picture"
+            >
+              {avatar.startsWith('data:image/') || avatar.startsWith('http') ? (
+                <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <span>{avatar}</span>
+              )}
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-200">
+                <span className="text-[9px] text-white font-black uppercase tracking-widest">Change</span>
+              </div>
             </div>
+
+            {/* Hidden Input File for Avatar */}
+            <input 
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
 
             <div className="border-b border-gray-100 pb-4 mb-4">
               {isEditingContact ? (
@@ -1044,6 +1087,61 @@ export default function ProfilePage({ phone = '', onNavigate }: ProfilePageProps
 
         </div>
       </div>
+
+      {/* Avatar Selector Modal */}
+      {showAvatarModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl relative border border-gray-100 text-center animate-scaleIn">
+            <button
+              onClick={() => setShowAvatarModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold text-lg cursor-pointer"
+            >
+              ×
+            </button>
+            <span className="text-4xl">📸</span>
+            <h3 className="text-base font-black text-[#0d1b3e] mt-3">Select Profile Picture</h3>
+            <p className="text-xs text-gray-500 mt-1">Choose an icon or upload your custom photo</p>
+
+            {/* Emoji Grid */}
+            <div className="grid grid-cols-6 gap-2 my-6">
+              {['👨‍⚕️', '👩‍⚕️', '🧑‍⚕️', '🩺', '🏥', '👤'].map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => {
+                    setAvatar(emoji)
+                    handleSaveToDb(basic, employment, education, preferences, emoji)
+                    setShowAvatarModal(false)
+                  }}
+                  className={`w-11 h-11 text-2xl bg-gray-50 hover:bg-blue-50 border rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+                    avatar === emoji ? 'border-[#00b4a0] bg-blue-50/50 scale-110' : 'border-gray-100'
+                  }`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-2.5">
+              <button
+                onClick={() => {
+                  setShowAvatarModal(false)
+                  avatarInputRef.current?.click()
+                }}
+                className="w-full bg-[#0d2b6b] hover:bg-[#00b4a0] text-white font-black text-xs py-3.5 rounded-xl uppercase tracking-wider shadow-md cursor-pointer"
+              >
+                Upload from device
+              </button>
+              <button
+                onClick={() => setShowAvatarModal(false)}
+                className="w-full border border-gray-200 hover:bg-gray-50 text-gray-500 font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
