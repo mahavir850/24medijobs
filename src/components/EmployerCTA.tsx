@@ -1894,55 +1894,49 @@ interface EmployerCTAProps {
 function PricingScreen({ onSelectPlan }: { onSelectPlan: (plan: { name: string; price: number }) => void }) {
   const plans = [
     {
-      name: 'Hot Vacancy',
-      price: 1650,
-      description: 'Maximum visibility & quick hiring',
+      name: '30 Days Plan',
+      price: 2500,
+      description: 'Get access to candidate database for 30 days',
+      recommended: false,
+      features: [
+        '2 SMB Job postings',
+        'Get unlimited applies',
+        'Instant CV recommendations from Naukri database, while applies follow',
+        '60 CV views from Naukri database',
+        'Job boost included'
+      ],
+      validity: 'Job validity 30 days',
+      discount: ''
+    },
+    {
+      name: '45 Days Plan',
+      price: 3500,
+      description: 'Get access to candidate database for 45 days',
       recommended: true,
       features: [
-        'Detailed job description',
-        '3 job locations',
-        'Unlimited applies',
-        'Applies expiry 90 days',
-        'Jobseeker contact details visible',
-        'Boost on Job Search Page',
-        'Job Branding'
+        '3 SMB Job postings',
+        'Get unlimited applies',
+        'Instant CV recommendations from Naukri database, while applies follow',
+        '90 CV views from Naukri database',
+        'Job boost included'
       ],
-      validity: 'Job validity 30 days',
-      discount: 'Flat 10% OFF on 5 Job Postings or more'
+      validity: 'Job validity 45 days',
+      discount: ''
     },
     {
-      name: 'Classified',
-      price: 850,
-      description: 'Cost-effective posting with visibility',
+      name: '60 Days Plan',
+      price: 4950,
+      description: 'Get access to candidate database for 60 days',
       recommended: false,
       features: [
-        'Upto 250 character job description',
-        '3 job locations',
-        'Unlimited applies',
-        'Applies expiry 90 days',
-        'Jobseeker contact details visible',
-        'Boost on Job Search Page (Not Included)',
-        'Job Branding (Not Included)'
+        '5 SMB Job postings',
+        'Get unlimited applies',
+        'Instant CV recommendations from Naukri database, while applies follow',
+        '150 CV views from Naukri database',
+        'Job boost included'
       ],
-      validity: 'Job validity 30 days',
-      discount: 'Flat 10% OFF on 5 Job Postings or more'
-    },
-    {
-      name: 'Standard',
-      price: 400,
-      description: 'Standard visibility for single openings',
-      recommended: false,
-      features: [
-        'Upto 250 character job description',
-        '1 job location',
-        '200 applies',
-        'Applies expiry 30 days',
-        'Jobseeker contact details visible (Not Included)',
-        'Boost on Job Search Page (Not Included)',
-        'Job Branding (Not Included)'
-      ],
-      validity: 'Job validity 15 days',
-      discount: 'Flat 10% OFF on 5 Job Postings or more'
+      validity: 'Job validity 60 days',
+      discount: ''
     },
     {
       name: 'Free',
@@ -1950,47 +1944,65 @@ function PricingScreen({ onSelectPlan }: { onSelectPlan: (plan: { name: string; 
       description: 'Basic listing to start recruitment',
       recommended: false,
       features: [
-        'Upto 250 character job description',
-        '1 job location',
-        '50 applies',
-        'Applies expiry 15 days',
-        'Jobseeker contact details visible (Not Included)',
-        'Boost on Job Search Page (Not Included)',
-        'Job Branding (Not Included)'
+        '1 Job posting',
+        'Get unlimited applies (Not Included)',
+        'Instant CV recommendations from Naukri database, while applies follow (Not Included)',
+        '10 CV views from Naukri database',
+        'Job boost (Not Included)'
       ],
-      validity: 'Job validity 7 days',
+      validity: 'Job validity 15 days',
       discount: ''
     }
   ];
 
   return (
-    <div className="py-16 bg-[#f0f5ff] min-h-screen">
+    <div className="py-16 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-12">
-          <span className="text-[#00b4a0] bg-[#00b4a0]/10 text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider">Pricing Plans</span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0d1b3e] mt-4">Find & Hire the Right Talent With Us</h2>
-          <p className="text-gray-500 mt-2 text-sm sm:text-base font-medium">Trusted by 9 Cr+ candidates | 5 Lakh+ employers</p>
+          <span className="text-[#0d2b6b] bg-[#0d2b6b]/5 text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-wider">
+            EXCLUSIVE PACKAGES FOR SMALL BUSINESSES & STARTUPS
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-black text-[#0d1b3e] mt-5">
+            Post a job and get access to Naukri's candidate database
+          </h2>
+          <p className="text-gray-500 mt-2 text-xs sm:text-sm font-semibold">
+            Trusted by 9 Cr+ candidates | 5 Lakh+ employers | Call Sales: 1800-102-2558
+          </p>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
           {plans.map((p) => (
-            <div key={p.name} className={`bg-white rounded-3xl p-6 shadow-xl border flex flex-col justify-between relative transition-all duration-300 hover:-translate-y-1.5 ${p.recommended ? 'border-2 border-[#00b4a0] scale-105 shadow-[#00b4a0]/10' : 'border-gray-100 shadow-gray-200/50'}`}>
-              {p.recommended && <span className="absolute -top-3.5 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-[#00b4a0] to-[#22c36a] text-white text-[10px] font-black px-4 py-1 rounded-full uppercase tracking-wider shadow-md">Best Value</span>}
+            <div key={p.name} className={`bg-white rounded-3xl p-6 shadow-xl border flex flex-col justify-between relative transition-all duration-300 hover:-translate-y-1.5 ${p.recommended ? 'border-2 border-blue-500 shadow-blue-500/10' : 'border-gray-100 shadow-gray-200/50'}`}>
+              {p.recommended && (
+                <span className="absolute -top-3.5 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white text-[9px] font-black px-4 py-1 rounded-full uppercase tracking-wider shadow-md">
+                  Best Value
+                </span>
+              )}
               <div>
-                <h3 className={`text-xl font-black ${p.price === 0 ? 'text-[#22c36a]' : 'text-[#0d1b3e]'}`}>{p.name}</h3>
+                <h3 className="text-sm font-black text-gray-500 uppercase tracking-wide">{p.name}</h3>
                 <div className="mt-4 flex items-baseline">
-                  <span className="text-3xl font-black text-[#0d1b3e]">{p.price === 0 ? 'Free' : `₹${p.price.toLocaleString('en-IN')}`}</span>
-                  {p.price > 0 && <span className="text-[10px] text-gray-400 font-bold ml-1.5 uppercase tracking-wide">*GST as applicable</span>}
+                  <span className="text-3xl font-black text-[#0d1b3e]">
+                    {p.price === 0 ? 'Free' : `₹${p.price.toLocaleString('en-IN')}`}
+                  </span>
+                  {p.price > 0 && (
+                    <span className="text-[10px] text-gray-400 font-bold ml-1.5 uppercase tracking-wide">
+                      *GST as applicable
+                    </span>
+                  )}
                 </div>
-                <p className="text-xs text-gray-400 mt-1.5 font-medium">{p.description}</p>
+                <p className="text-[10px] text-gray-400 mt-1.5 font-medium">{p.description}</p>
                 <div className="h-[1px] bg-gray-100 my-5" />
 
                 <div className="space-y-3 mb-6">
-                  <p className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest">Key Features</p>
+                  <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest">Key Features</p>
                   {p.features.map((f, i) => (
                     <div key={i} className="flex items-start gap-2 text-xs">
-                      <span className={f.includes('Not Included') ? 'text-gray-300' : 'text-[#22c36a]'}>{f.includes('Not Included') ? '✗' : '✓'}</span>
-                      <span className={f.includes('Not Included') ? 'text-gray-400 line-through' : 'text-gray-700 font-medium'}>{f.replace(' (Not Included)', '')}</span>
+                      <span className={f.includes('Not Included') ? 'text-gray-300' : 'text-green-500'}>
+                        {f.includes('Not Included') ? '✗' : '✓'}
+                      </span>
+                      <span className={f.includes('Not Included') ? 'text-gray-400 line-through' : 'text-gray-700 font-bold'}>
+                        {f.replace(' (Not Included)', '')}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -1999,15 +2011,14 @@ function PricingScreen({ onSelectPlan }: { onSelectPlan: (plan: { name: string; 
               <div>
                 <div className="h-[1px] bg-gray-100 my-5" />
                 <div className="text-center mb-5 space-y-1">
-                  <p className="text-[11px] font-bold text-gray-700">{p.validity}</p>
-                  {p.discount && <p className="text-[10px] font-bold text-[#00b4a0] bg-[#00b4a0]/5 px-2 py-0.5 rounded-full inline-block">{p.discount}</p>}
+                  <p className="text-[10px] font-black text-gray-500 uppercase tracking-wide">{p.validity}</p>
                 </div>
                 <button
                   onClick={() => onSelectPlan({ name: p.name, price: p.price })}
                   className={`w-full py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider transition-all duration-200 cursor-pointer ${
                     p.price === 0 
-                      ? 'bg-[#22c36a]/10 hover:bg-[#22c36a] text-[#22c36a] hover:text-white border border-[#22c36a]/20 shadow-sm'
-                      : 'bg-[#0d2b6b] hover:bg-[#00b4a0] text-white shadow-md shadow-[#0d2b6b]/10'
+                      ? 'bg-green-50 hover:bg-green-500 text-green-500 hover:text-white border border-green-200 shadow-sm'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/10'
                   }`}
                 >
                   {p.price === 0 ? 'Post a free job' : 'Buy now'}
