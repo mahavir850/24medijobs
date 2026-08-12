@@ -476,9 +476,23 @@ const EmployerDashboard = ({
       {/* Recruiter Sidebar */}
       <div className="w-64 bg-white border-r border-gray-200 shrink-0 flex flex-col justify-between py-6">
         <div className="space-y-6 px-4">
-          <div className="border-b border-gray-100 pb-4">
-            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Workspace</h3>
-            <p className="text-sm font-black text-[#0d1b3e] mt-1 truncate">{profile?.businessName || 'DigiPhlox'}</p>
+          <div className="border-b border-gray-100 pb-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#f0f5ff] flex items-center justify-center text-2xl shrink-0 overflow-hidden border border-blue-50">
+              {profile?.logo && profile.logo.length > 4 ? (
+                <img src={profile.logo} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                <span>{profile?.logo || '🏥'}</span>
+              )}
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Workspace</h3>
+              <p className="text-xs font-black text-[#0d1b3e] truncate" title={profile?.businessName}>{profile?.businessName || 'DigiPhlox'}</p>
+              {profile?.gstNumber && (
+                <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mt-0.5 truncate" title={profile.gstNumber}>
+                  Reg No: {profile.gstNumber}
+                </p>
+              )}
+            </div>
           </div>
           
           <nav className="space-y-1.5">
