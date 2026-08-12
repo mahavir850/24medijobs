@@ -2034,35 +2034,195 @@ function PricingScreen({ onSelectPlan }: { onSelectPlan: (plan: { name: string; 
 
 function PurchaseLoginScreen({ 
   onLogin, 
-  onRegister, 
   planName,
   hasSelectedPlan
 }: { 
-  onLogin: (phone: string) => void; 
-  onRegister: () => void; 
+  onLogin: (email: string, registerProfile?: any) => void; 
   planName: string;
   hasSelectedPlan: boolean;
 }) {
-  const [phone, setPhone] = useState('');
+  const [showRegister, setShowRegister] = useState(false);
+  
+  // Login fields
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
+  // Register fields
+  const [regName, setRegName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [regPhone, setRegPhone] = useState('');
+  const [regCompany, setRegCompany] = useState('');
+  const [regCompanyRegNo, setRegCompanyRegNo] = useState('');
+
   const [googleLoggingIn, setGoogleLoggingIn] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (phone.trim()) onLogin(phone.trim());
+    if (!loginEmail.trim() || !loginPassword.trim()) {
+      alert('Please fill out all credentials.');
+      return;
+    }
+    onLogin(loginEmail.trim());
+  };
+
+  const handleRegisterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!regName.trim() || !regEmail.trim() || !regPassword.trim() || !regPhone.trim() || !regCompany.trim()) {
+      alert('Please fill out all required fields.');
+      return;
+    }
+    if (regPassword !== regConfirmPassword) {
+      alert('Passwords do not match!');
+      return;
+    }
+
+    const newProfile = {
+      name: regName.trim(),
+      email: regEmail.trim(),
+      phone: regPhone.trim(),
+      businessName: regCompany.trim(),
+      gstNumber: regCompanyRegNo.trim(),
+      logo: '🏥'
+    };
+
+    onLogin(regEmail.trim(), newProfile);
   };
 
   const handleGoogleLogin = () => {
     setGoogleLoggingIn(true);
     setTimeout(() => {
       setGoogleLoggingIn(false);
-      onLogin('9876543210'); // Simulated profile number
+      onLogin('hr@digiphlox.com'); // Simulated Google login
     }, 1200);
   };
 
+  if (showRegister) {
+    return (
+      <div className="py-16 bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-xl border border-gray-100 mx-4">
+          <div className="text-center mb-6">
+            <span className="text-[#0d2b6b] bg-[#0d2b6b]/5 text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-wider">
+              Recruiter Registration
+            </span>
+            <h2 className="text-xl font-black text-[#0d1b3e] mt-4">Create Recruiter Profile</h2>
+            <p className="text-xs text-gray-400 font-bold mt-1">Configure your corporate hiring account</p>
+          </div>
+
+          <form onSubmit={handleRegisterSubmit} className="space-y-4 text-left">
+            <div>
+              <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">Full Name *</label>
+              <input
+                type="text"
+                required
+                value={regName}
+                onChange={(e) => setRegName(e.target.value)}
+                placeholder="Enter your name"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">Email ID *</label>
+              <input
+                type="email"
+                required
+                value={regEmail}
+                onChange={(e) => setRegEmail(e.target.value)}
+                placeholder="Enter email ID"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">Password *</label>
+                <input
+                  type="password"
+                  required
+                  value={regPassword}
+                  onChange={(e) => setRegPassword(e.target.value)}
+                  placeholder="Password"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">Confirm Password *</label>
+                <input
+                  type="password"
+                  required
+                  value={regConfirmPassword}
+                  onChange={(e) => setRegConfirmPassword(e.target.value)}
+                  placeholder="Confirm password"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">Mobile Number *</label>
+              <div className="flex gap-2">
+                <span className="bg-gray-50 border border-gray-200 px-3.5 py-2.5 rounded-xl text-xs font-bold text-gray-400">+91</span>
+                <input
+                  type="tel"
+                  required
+                  value={regPhone}
+                  onChange={(e) => setRegPhone(e.target.value)}
+                  placeholder="Enter 10-digit number"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">Company Name *</label>
+              <input
+                type="text"
+                required
+                value={regCompany}
+                onChange={(e) => setRegCompany(e.target.value)}
+                placeholder="Enter company name"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">Company Register Number</label>
+              <input
+                type="text"
+                value={regCompanyRegNo}
+                onChange={(e) => setRegCompanyRegNo(e.target.value)}
+                placeholder="Enter registration or GST number"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+              />
+            </div>
+
+            <div className="pt-2 space-y-3">
+              <button
+                type="submit"
+                className="w-full bg-[#0d2b6b] hover:bg-[#00b4a0] text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-md"
+              >
+                Continue
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowRegister(false)}
+                className="w-full text-center text-xs font-bold text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                Already Registered? <span className="text-[#0d2b6b] underline">Login here</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="py-16 bg-[#f0f5ff] min-h-screen flex items-center justify-center">
+    <div className="py-16 bg-gray-50 min-h-screen flex items-center justify-center">
       <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-xl border border-gray-100 text-center mx-4">
-        <span className="text-[#00b4a0] bg-[#00b4a0]/10 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-wider">
+        <span className="text-[#0d2b6b] bg-[#0d2b6b]/5 text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-wider">
           {hasSelectedPlan ? 'Purchase Flow' : 'Recruiter Sign In'}
         </span>
         <h2 className="text-2xl font-black text-[#0d1b3e] mt-4 mb-2">Find & Hire the Right Talent With Us</h2>
@@ -2080,7 +2240,7 @@ function PurchaseLoginScreen({
             <h4 className="text-sm font-black text-[#0d1b3e] mb-1">New to 24medijobs?</h4>
             <p className="text-xs text-gray-500 mb-4">Complete your hospital details to configure your recruiter portal profile.</p>
             <button
-              onClick={onRegister}
+              onClick={() => setShowRegister(true)}
               className="w-full bg-[#00b4a0] hover:bg-[#009888] text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer"
             >
               Continue as a New User
@@ -2094,15 +2254,26 @@ function PurchaseLoginScreen({
           </div>
 
           {/* Existing User Login form */}
-          <form onSubmit={handleSubmit} className="text-left space-y-4">
+          <form onSubmit={handleLoginSubmit} className="text-left space-y-4">
             <div>
-              <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">Registered Phone Number</label>
+              <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">Email ID / Username</label>
               <input
-                type="tel"
+                type="email"
                 required
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Enter 10-digit phone"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                placeholder="Enter email address"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">Password</label>
+              <input
+                type="password"
+                required
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                placeholder="Enter password"
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
               />
             </div>
@@ -2110,7 +2281,7 @@ function PurchaseLoginScreen({
               type="submit"
               className="w-full bg-[#0d2b6b] hover:bg-[#0d2b6b]/95 text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-md"
             >
-              Verify OTP & Sign In
+              Sign In
             </button>
           </form>
 
@@ -2356,13 +2527,43 @@ export default function EmployerCTA({
     return () => { if (el) observer.unobserve(el); };
   }, []);
 
-  const handleLogin = async (phone: string) => {
-    setTempEmployerPhone(phone);
+  const handleLogin = async (email: string, registerProfile?: any) => {
     try {
+      if (registerProfile) {
+        setTempEmployerPhone(registerProfile.phone);
+        const empData = {
+          id: registerProfile.email,
+          name: registerProfile.name,
+          designation: 'HR Manager',
+          email: registerProfile.email,
+          business_name: registerProfile.businessName,
+          business_type: 'company',
+          gst_number: registerProfile.gstNumber,
+          logo: '🏥',
+          phone: registerProfile.phone
+        };
+        try {
+          await supabase.from('employer_profiles').upsert(empData);
+        } catch (err) {
+          console.error('Error saving new recruiter profile:', err);
+        }
+        setEmployerProfile(registerProfile);
+
+        if (selectedPlan && selectedPlan.price > 0) {
+          setCurrentPage('pay-now');
+        } else if (selectedPlan && selectedPlan.price === 0) {
+          setCurrentPage('job-details');
+        } else {
+          setCurrentPage('home');
+        }
+        return;
+      }
+
+      setTempEmployerPhone('9876543210');
       const { data: profileRow, error } = await supabase
         .from('employer_profiles')
         .select('*')
-        .eq('id', phone)
+        .or(`id.eq.${email},email.eq.${email}`)
         .maybeSingle();
 
       if (!error && profileRow) {
@@ -2390,13 +2591,12 @@ export default function EmployerCTA({
       } else {
         if (error) console.error('Error fetching employer profile:', error);
         
-        // Setup temporary default profile for new recruiters to log them in instantly
         setEmployerProfile({
           name: 'HR Manager',
-          email: 'hr@digiphlox.com',
+          email: email || 'hr@digiphlox.com',
           businessName: 'DigiPhlox',
           logo: '🏥',
-          phone: phone || '9876543210'
+          phone: '9876543210'
         });
 
         if (selectedPlan && selectedPlan.price > 0) {
@@ -2404,14 +2604,14 @@ export default function EmployerCTA({
         } else if (selectedPlan && selectedPlan.price === 0) {
           setCurrentPage('job-details');
         } else {
-          setCurrentPage('home'); // Go to recruiter dashboard
+          setCurrentPage('home');
         }
       }
     } catch (err) {
       console.error(err);
       setEmployerProfile({
         name: 'HR Manager',
-        email: 'hr@digiphlox.com',
+        email: email || 'hr@digiphlox.com',
         businessName: 'DigiPhlox',
         logo: '🏥',
         phone: '9876543210'
@@ -2509,7 +2709,6 @@ export default function EmployerCTA({
             planName={selectedPlan?.name || 'Free'}
             hasSelectedPlan={!!selectedPlan}
             onLogin={handleLogin}
-            onRegister={() => setCurrentPage('profile-setup')}
           />
         );
       case 'pay-now':
