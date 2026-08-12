@@ -517,15 +517,15 @@ const EmployerDashboard = ({
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">Designation</p>
-                  <p className="font-semibold text-gray-700">{profile.designation}</p>
+                  <p className="font-semibold text-gray-700">{profile.designation || 'HR Representative'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">Company Name</p>
-                  <p className="font-semibold text-gray-700">{profile.businessName}</p>
+                  <p className="font-semibold text-gray-700">{profile.businessName || 'DigiPhlox'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">Company Type</p>
-                  <p className="font-semibold text-gray-700 uppercase">{profile.businessType.replace('_', ' ')}</p>
+                  <p className="font-semibold text-gray-700 uppercase">{(profile.businessType || 'company').replace('_', ' ')}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">Email Address</p>
