@@ -30,6 +30,7 @@ export default function Navbar({
 }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20)
@@ -41,7 +42,6 @@ export default function Navbar({
     { label: 'Home', page: 'home' },
     { label: 'Find Jobs', page: 'jobs' },
     { label: 'Categories', page: 'categories' },
-    ...(!employerProfile ? [{ label: 'Post a Job', page: 'employers' }] : []),
     { label: 'About', page: 'about' },
   ]
 
@@ -91,23 +91,43 @@ export default function Navbar({
     }
 
     return (
-      <div className="flex items-center gap-3">
+      <div className="relative">
         <button
-          onClick={() => onNavigate('employers-login')}
-          className={`text-sm font-semibold px-5 py-2.5 rounded-lg transition-all duration-200 border ${
+          onClick={() => setDropdownOpen(!dropdownOpen)}
+          onBlur={() => setTimeout(() => setDropdownOpen(false), 200)}
+          className={`text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 border flex items-center gap-2 cursor-pointer ${
             scrolled
               ? 'border-[#0d2b6b] text-[#0d2b6b] hover:bg-[#0d2b6b] hover:text-white'
-              : 'border-white text-white hover:bg-white hover:text-[#0d2b6b]'
+              : 'border-white text-white hover:bg-white/10'
           }`}
         >
-          Employer Login
+          <span>🚀 App</span>
+          <span className="text-[10px]">▼</span>
         </button>
-        <button
-          onClick={() => onNavigate('employers')}
-          className="text-sm font-semibold px-5 py-2.5 rounded-lg bg-[#00b4a0] text-white hover:bg-[#009888] transition-all duration-200 shadow-md hover:shadow-lg"
-        >
-          Post a Job
-        </button>
+        
+        {dropdownOpen && (
+          <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 animate-fadeIn text-left">
+            <button
+              onClick={() => {
+                onNavigate('login');
+                setDropdownOpen(false);
+              }}
+              className="w-full text-left px-4 py-2.5 text-xs font-bold text-[#0d1b3e] hover:bg-[#f0f5ff] hover:text-[#00b4a0] transition-colors cursor-pointer"
+            >
+              👤 Candidate Login
+            </button>
+            <div className="h-[1px] bg-gray-100 my-1" />
+            <button
+              onClick={() => {
+                onNavigate('employers-login');
+                setDropdownOpen(false);
+              }}
+              className="w-full text-left px-4 py-2.5 text-xs font-bold text-[#0d1b3e] hover:bg-[#f0f5ff] hover:text-[#00b4a0] transition-colors cursor-pointer"
+            >
+              🏥 Post Job Login
+            </button>
+          </div>
+        )}
       </div>
     )
   }
@@ -166,18 +186,18 @@ export default function Navbar({
     }
 
     return (
-      <div className="flex gap-3 pt-2">
+      <div className="flex flex-col gap-2 pt-2">
         <button
-          onClick={() => { onNavigate('employers-login'); setMobileOpen(false) }}
-          className="flex-1 text-sm font-semibold px-4 py-2.5 rounded-lg border border-[#0d2b6b] text-[#0d2b6b]"
+          onClick={() => { onNavigate('login'); setMobileOpen(false) }}
+          className="w-full text-center text-xs font-bold text-[#0d2b6b] bg-[#f0f5ff] py-3 rounded-xl border border-transparent cursor-pointer"
         >
-          Employer Login
+          👤 Candidate Login
         </button>
         <button
-          onClick={() => { onNavigate('employers'); setMobileOpen(false) }}
-          className="flex-1 text-sm font-semibold px-4 py-2.5 rounded-lg bg-[#00b4a0] text-white"
+          onClick={() => { onNavigate('employers-login'); setMobileOpen(false) }}
+          className="w-full text-center text-xs font-bold text-white bg-[#00b4a0] py-3 rounded-xl border border-transparent cursor-pointer shadow-md"
         >
-          Post a Job
+          🏥 Post Job Login
         </button>
       </div>
     )

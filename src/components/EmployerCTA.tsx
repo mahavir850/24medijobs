@@ -331,8 +331,10 @@ const EmployerDashboard = ({
   onPostJob: () => void; 
   onLogout: () => void; 
 }) => {
-  const myJobs = jobs.filter(job => job.hospital.toLowerCase() === profile.businessName.toLowerCase());
+  const myJobs = jobs.filter(job => job.hospital.toLowerCase() === (profile?.businessName || 'digiphlox').toLowerCase());
   const [expandedJobId, setExpandedJobId] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<'jobs' | 'database' | 'reports' | 'credits' | 'billing' | 'help' | 'sales' | 'offers'>('jobs');
+  const [showOfferPopup, setShowOfferPopup] = useState(false);
   const [applicantStatuses, setApplicantStatuses] = useState<Record<string, string>>(() => {
     const saved = localStorage.getItem('applicant_statuses');
     return saved ? JSON.parse(saved) : {};
@@ -398,7 +400,6 @@ const EmployerDashboard = ({
     const appliedJobs = savedApplied ? JSON.parse(savedApplied) : [];
     const isApplied = appliedJobs.includes(jobId);
 
-    // For brand new jobs (ID > 12), show only the actual applicant if they applied
     if (jobId > 12) {
       if (isApplied) {
         const basicInfo = localStorage.getItem('seeker_basic_info');
@@ -422,7 +423,6 @@ const EmployerDashboard = ({
       return [];
     }
 
-    // For default jobs (ID <= 12), return mock applicants + real candidate if applied
     if (isApplied) {
       const basicInfo = localStorage.getItem('seeker_basic_info');
       const profInfo = localStorage.getItem('seeker_professional_info');
@@ -471,101 +471,104 @@ const EmployerDashboard = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#00b4a0] bg-gray-50 shrink-0 shadow-md">
-              <img src={profile.logo} alt="Logo" className="w-full h-full object-cover" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-[#0d1b3e] flex items-center gap-1.5">
-                {profile.businessName}
-                <span className="bg-[#22c36a]/15 text-[#22c36a] text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Verified Profile</span>
-              </h1>
-              <p className="text-sm text-gray-500">{profile.name} — {profile.designation}</p>
-            </div>
+    <div className="min-h-screen bg-gray-50 flex pt-20">
+      
+      {/* Recruiter Sidebar */}
+      <div className="w-64 bg-white border-r border-gray-200 shrink-0 flex flex-col justify-between py-6">
+        <div className="space-y-6 px-4">
+          <div className="border-b border-gray-100 pb-4">
+            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Workspace</h3>
+            <p className="text-sm font-black text-[#0d1b3e] mt-1 truncate">{profile?.businessName || 'DigiPhlox'}</p>
           </div>
-          <div className="flex gap-3 w-full sm:w-auto shrink-0">
-            <button
-              onClick={onPostJob}
-              className="flex-1 sm:flex-initial bg-[#00b4a0] hover:bg-[#009888] text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm shadow-md hover:shadow-lg flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <span>➕</span> Post a New Job
-            </button>
-            <button
-              onClick={onLogout}
-              className="px-4 py-3 border border-red-200 text-red-500 hover:bg-red-50 rounded-xl transition-colors text-sm font-semibold cursor-pointer"
-            >
-              Sign Out
-            </button>
-          </div>
+          
+          <nav className="space-y-1.5">
+            {[
+              { id: 'jobs', label: 'Jobs', icon: '💼' },
+              { id: 'database', label: 'Database', icon: '🗄️' },
+              { id: 'reports', label: 'Reports', icon: '📊' },
+              { id: 'credits', label: 'Credits & usage', icon: '🪙' },
+              { id: 'billing', label: 'Billing', icon: '💳' },
+              { id: 'help', label: 'Help & Support', icon: '❓' },
+              { id: 'sales', label: 'Contact Sales', icon: '📞' },
+              { id: 'offers', label: 'Offers', icon: '🔥' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  activeTab === tab.id
+                    ? 'bg-[#0d2b6b] text-white shadow-md'
+                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+                }`}
+              >
+                <span>{tab.icon}</span>
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </nav>
         </div>
 
-        {/* Dashboard Grid */}
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Profile Card & Stats */}
+        <div className="px-4 border-t border-gray-100 pt-4">
+          <button
+            onClick={onLogout}
+            className="w-full text-center text-xs font-black text-red-500 bg-red-50 hover:bg-red-100 py-3 rounded-xl transition-colors cursor-pointer"
+          >
+            🚪 Logout Workspace
+          </button>
+        </div>
+      </div>
+
+      {/* Recruiter Workspace Content Area */}
+      <div className="flex-1 p-8 overflow-y-auto">
+        
+        {/* JOBS TAB */}
+        {activeTab === 'jobs' && (
           <div className="space-y-6">
-            {/* Representative Card */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-              <h3 className="font-bold text-[#0d1b3e] text-base mb-4 border-b border-gray-100 pb-2">Business & Profile Details</h3>
-              <div className="space-y-3 text-sm">
-                <div>
-                  <p className="text-xs text-gray-400">Representative Name</p>
-                  <p className="font-semibold text-gray-700">{profile.name}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400">Designation</p>
-                  <p className="font-semibold text-gray-700">{profile.designation || 'HR Representative'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400">Company Name</p>
-                  <p className="font-semibold text-gray-700">{profile.businessName || 'DigiPhlox'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400">Company Type</p>
-                  <p className="font-semibold text-gray-700 uppercase">{(profile.businessType || 'company').replace('_', ' ')}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400">Email Address</p>
-                  <p className="font-semibold text-gray-700">{profile.email}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400">Verification Document</p>
-                  <p className="font-semibold text-gray-700">
-                    {profile.gstNumber && `GST: ${profile.gstNumber}`}
-                    {!profile.gstNumber && profile.panNumber && `PAN: ${profile.panNumber}`}
-                    {!profile.gstNumber && !profile.panNumber && profile.aadharNumber && `Aadhar: XXXX-XXXX-${profile.aadharNumber.slice(-4)}`}
-                  </p>
+            <div className="flex justify-between items-center pb-3 border-b border-gray-200">
+              <div>
+                <h2 className="text-xl font-black text-[#0d1b3e]">Recruiter Job Manager</h2>
+                <p className="text-xs text-gray-400">Post new job descriptions and manage responses</p>
+              </div>
+              {myJobs.length > 0 && (
+                <button
+                  onClick={onPostJob}
+                  className="bg-[#00b4a0] hover:bg-[#009888] text-white font-bold px-6 py-3 rounded-xl text-xs uppercase tracking-wider shadow-md cursor-pointer"
+                >
+                  ➕ Post a New Job
+                </button>
+              )}
+            </div>
+
+            {myJobs.length === 0 ? (
+              <div className="max-w-2xl mx-auto mt-8 bg-white border border-gray-100 shadow-xl rounded-3xl p-8 text-center">
+                <span className="text-5xl">📢</span>
+                <h3 className="text-lg font-black text-[#0d1b3e] mt-4">Post your first job</h3>
+                <p className="text-xs text-gray-500 max-w-sm mx-auto mt-2">Hire qualified candidates from India's No.1 Medical Job portal in few clicks.</p>
+                
+                <div className="grid sm:grid-cols-2 gap-4 mt-8">
+                  <div className="border border-gray-200 hover:border-[#0d2b6b] p-5 rounded-2xl text-left bg-gray-50 hover:bg-white transition-all">
+                    <p className="text-xs font-black text-[#0d2b6b]">Start with blank form</p>
+                    <p className="text-[10px] text-gray-400 font-bold mt-1">Use our blank form to create your job and fill manually.</p>
+                    <button
+                      onClick={onPostJob}
+                      className="mt-4 w-full bg-[#0d2b6b] hover:bg-[#0d2b6b]/90 text-white font-black text-[10px] py-2 rounded-lg uppercase tracking-wider cursor-pointer"
+                    >
+                      Start with blank form
+                    </button>
+                  </div>
+                  <div className="border border-gray-200 hover:border-[#0d2b6b] p-5 rounded-2xl text-left bg-gray-50 hover:bg-white transition-all">
+                    <p className="text-xs font-black text-[#0d2b6b]">Use a template</p>
+                    <p className="text-[10px] text-gray-400 font-bold mt-1">Use templates made by apna to save time and hire the right candidates.</p>
+                    <button
+                      onClick={onPostJob}
+                      className="mt-4 w-full bg-[#00b4a0] hover:bg-[#009888] text-white font-black text-[10px] py-2 rounded-lg uppercase tracking-wider cursor-pointer"
+                    >
+                      Use a template
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm text-center">
-              <h3 className="font-bold text-[#0d1b3e] text-base mb-4 text-left border-b border-gray-100 pb-2">Hiring Stats</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-blue-50 p-4 rounded-xl">
-                  <p className="text-2xl font-black text-blue-700">{myJobs.length}</p>
-                  <p className="text-xs text-gray-500 font-medium">Jobs Active</p>
-                </div>
-                <div className="bg-green-50 p-4 rounded-xl">
-                  <p className="text-2xl font-black text-green-700">{myJobs.length * 12}</p>
-                  <p className="text-xs text-gray-500 font-medium">Total Applicants</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Jobs List Panel */}
-          <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-[#0d1b3e]">My Job Listings ({myJobs.length})</h2>
-              <span className="text-xs text-[#5a6a8a] font-medium bg-[#f0f5ff] px-3 py-1 rounded-full">Active</span>
-            </div>
-
-            {myJobs.length > 0 ? (
+            ) : (
               <div className="space-y-4">
                 {myJobs.map((job) => (
                   <div key={job.id} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm relative overflow-hidden group hover:border-[#00b4a0] transition-colors">
@@ -607,7 +610,7 @@ const EmployerDashboard = ({
                       </div>
                     </div>
 
-                    {/* Inline Candidates list directly inside the Job card */}
+                    {/* Inline Candidates list */}
                     {expandedJobId === job.id && (
                       <div className="border-t border-gray-100 mt-4 pt-4 space-y-3 bg-gray-50/50 p-4 rounded-xl">
                         <h4 className="text-xs font-bold text-[#0d2b6b] uppercase tracking-wider mb-2">
@@ -640,7 +643,6 @@ const EmployerDashboard = ({
                                   </button>
                                 </div>
 
-                                {/* Hiring status stepper */}
                                 <div className="border-t border-gray-50 pt-2.5">
                                   <p className="text-[9px] text-gray-400 font-extrabold uppercase tracking-widest mb-2">Hiring Pipeline Status:</p>
                                   <div className="flex flex-wrap items-center gap-1.5">
@@ -654,7 +656,6 @@ const EmployerDashboard = ({
                                             setApplicantStatuses(newStatuses);
                                             localStorage.setItem('applicant_statuses', JSON.stringify(newStatuses));
                                             
-                                            // Sync to Supabase in background
                                             try {
                                               await supabase
                                                 .from('applications')
@@ -662,7 +663,7 @@ const EmployerDashboard = ({
                                                 .eq('job_id', job.id)
                                                 .eq('seeker_phone', applicant.phone);
                                             } catch (err) {
-                                              console.error('Failed to sync status to Supabase:', err);
+                                              console.error(err);
                                             }
                                           }}
                                           className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider transition-all duration-150 cursor-pointer ${
@@ -688,22 +689,263 @@ const EmployerDashboard = ({
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-sm">
-                <div className="text-5xl mb-4">📢</div>
-                <h3 className="font-bold text-[#0d1b3e] text-lg mb-2">No active job listings</h3>
-                <p className="text-[#5a6a8a] text-sm mb-6 max-w-sm mx-auto">Create your first medical job posting to receive verified applications from medical specialists.</p>
-                <button
-                  onClick={onPostJob}
-                  className="bg-[#00b4a0] hover:bg-[#009888] text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 text-sm shadow-md hover:shadow-lg inline-flex items-center gap-1.5 cursor-pointer"
-                >
-                  Post a Job Now
-                </button>
-              </div>
             )}
           </div>
-        </div>
+        )}
+
+        {/* DATABASE TAB */}
+        {activeTab === 'database' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-black text-[#0d1b3e]">Candidate CV Pool</h2>
+              <p className="text-xs text-gray-400">Search and contact medical professionals directly</p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              {[
+                { name: 'Dr. Amit Sharma', role: 'Cardiologist', exp: '6 Years', spec: 'General Medicine, ECHO, Cardiology', place: 'Patna' },
+                { name: 'Riya Sen', role: 'ICU Staff Nurse', exp: '4 Years', spec: 'BCLS, Critical Care Nursing', place: 'Haldwani' },
+                { name: 'Shreya Roy', role: 'Lab Assistant', exp: '2 Years', spec: 'Pathology, Biochemistry', place: 'Mumbai' },
+                { name: 'Dr. Rajesh Patel', role: 'Physician', exp: '10 Years', spec: 'General Medicine, Diagnostics', place: 'Bengaluru' },
+              ].map((c) => (
+                <div key={c.name} className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="text-sm font-black text-[#0d1b3e]">{c.name}</h4>
+                      <p className="text-[10px] text-[#00b4a0] font-black uppercase mt-0.5">{c.role}</p>
+                    </div>
+                    <span className="text-[10px] font-bold bg-[#f0f5ff] text-[#0d2b6b] px-3 py-1 rounded-full">{c.exp} Exp</span>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    <p>🎯 Specialty: {c.spec}</p>
+                    <p className="mt-1">📍 Pref Location: {c.place}</p>
+                  </div>
+                  <button
+                    onClick={() => alert(`Unlocked contact details for ${c.name}!`)}
+                    className="w-full bg-[#0d2b6b] hover:bg-[#00b4a0] text-white text-[10px] font-black py-2.5 rounded-xl uppercase tracking-wider cursor-pointer"
+                  >
+                    Contact Candidate
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* REPORTS TAB */}
+        {activeTab === 'reports' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-black text-[#0d1b3e]">Recruitment Analytics</h2>
+              <p className="text-xs text-gray-400">Track listings engagement and applicant metrics</p>
+            </div>
+
+            <div className="grid sm:grid-cols-3 gap-6">
+              {[
+                { title: 'Response Rate', value: '94%', color: 'text-[#22c36a] bg-green-50' },
+                { title: 'Job Page Views', value: '1,450', color: 'text-blue-700 bg-blue-50' },
+                { title: 'Avg Days to Hire', value: '12 Days', color: 'text-[#00b4a0] bg-teal-50' },
+              ].map((stat) => (
+                <div key={stat.title} className={`${stat.color} p-6 rounded-3xl text-center shadow-sm`}>
+                  <p className="text-3xl font-black">{stat.value}</p>
+                  <p className="text-[10px] font-black text-gray-400 uppercase mt-1 tracking-wider">{stat.title}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* CREDITS TAB */}
+        {activeTab === 'credits' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-black text-[#0d1b3e]">Credits & usage Balance</h2>
+              <p className="text-xs text-gray-400">View remaining quotas for job postings and CV downloads</p>
+            </div>
+
+            <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm grid sm:grid-cols-2 gap-8">
+              <div className="text-center p-6 bg-gray-50 rounded-2xl">
+                <span className="text-3xl">💼</span>
+                <h4 className="text-sm font-black text-[#0d1b3e] mt-2">Active Job Postings Limit</h4>
+                <p className="text-2xl font-black text-[#00b4a0] mt-1">5 Remaining</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">Renews next billing cycle</p>
+              </div>
+              <div className="text-center p-6 bg-gray-50 rounded-2xl">
+                <span className="text-3xl">🗂️</span>
+                <h4 className="text-sm font-black text-[#0d1b3e] mt-2">CV Search Unlocks</h4>
+                <p className="text-2xl font-black text-[#00b4a0] mt-1">120 Remaining</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">Premium CV downloads quota</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* BILLING TAB */}
+        {activeTab === 'billing' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-black text-[#0d1b3e]">Billing & Subscription</h2>
+              <p className="text-xs text-gray-400">View payment receipts and modify plan types</p>
+            </div>
+
+            <div className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-100 text-gray-400 font-bold uppercase tracking-wider">
+                    <th className="p-4">Invoice ID</th>
+                    <th className="p-4">Plan Name</th>
+                    <th className="p-4">Amount Paid</th>
+                    <th className="p-4">Date</th>
+                    <th className="p-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  <tr className="font-semibold text-gray-600">
+                    <td className="p-4">INV-2026-001</td>
+                    <td className="p-4">Naukri Recruiter Free Pack</td>
+                    <td className="p-4">₹ 0</td>
+                    <td className="p-4">12-Aug-2026</td>
+                    <td className="p-4 text-green-500 font-black">ACTIVE</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* HELP TAB */}
+        {activeTab === 'help' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-black text-[#0d1b3e]">Help & Support Helpdesk</h2>
+              <p className="text-xs text-gray-400">Submit queries and read portal tutorials</p>
+            </div>
+
+            <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm max-w-xl">
+              <form onSubmit={(e) => { e.preventDefault(); alert('Query submitted!'); }} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Brief description of problem</label>
+                  <textarea rows={3} required className="w-full px-4 py-3 border border-gray-200 rounded-xl text-xs font-semibold outline-none focus:border-[#0d2b6b] resize-none" />
+                </div>
+                <button type="submit" className="bg-[#0d2b6b] hover:bg-[#00b4a0] text-white font-black text-xs py-3 px-6 rounded-xl uppercase tracking-wider cursor-pointer">
+                  Submit Ticket
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* CONTACT SALES */}
+        {activeTab === 'sales' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-black text-[#0d1b3e]">Contact Sales Division</h2>
+              <p className="text-xs text-gray-400">Inquire about bulk plans and enterprise dashboard access</p>
+            </div>
+
+            <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm max-w-md space-y-4">
+              <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 text-xs text-blue-900 font-bold">
+                📞 Recruiter Support Helpline: +91 1800 200 4500
+              </div>
+              <p className="text-xs text-gray-500 font-semibold leading-relaxed">Our specialists are available Mon-Fri 09:30 AM to 06:30 PM to configure custom CV access quotas for your hospitals.</p>
+            </div>
+          </div>
+        )}
+
+        {/* OFFERS TAB */}
+        {activeTab === 'offers' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-black text-[#0d1b3e]">Active Recruitment Offers</h2>
+              <p className="text-xs text-gray-400">Get discounted pricing packages for premium medical hiring</p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-gradient-to-br from-[#0d2b6b] to-[#1e469a] text-white rounded-3xl p-6 shadow-xl relative overflow-hidden flex flex-col justify-between">
+                <div className="absolute top-3 right-3 bg-red-500 text-white text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
+                  50% OFF
+                </div>
+                <div>
+                  <h4 className="text-base font-black uppercase tracking-wider">Super Saver Recruiter Pack</h4>
+                  <p className="text-xs text-white/70 mt-1">10 Job Listings + 250 CV Search Unlocks</p>
+                </div>
+                <div className="mt-8 flex justify-between items-center">
+                  <div>
+                    <span className="text-xs line-through text-white/50 font-bold">₹10,000</span>
+                    <span className="text-xl font-black ml-2 text-[#00b4a0]">₹4,999</span>
+                  </div>
+                  <button
+                    onClick={() => setShowOfferPopup(true)}
+                    className="bg-[#00b4a0] hover:bg-[#009888] text-white font-black text-[10px] px-4 py-2 rounded-xl uppercase tracking-wider cursor-pointer"
+                  >
+                    View Offer
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
+
+      {/* buy-package-offer-popup Modal */}
+      {showOfferPopup && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative border border-gray-100 text-center animate-scaleIn">
+            <button
+              onClick={() => setShowOfferPopup(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold text-lg"
+            >
+              ×
+            </button>
+            <span className="text-4xl">🎁</span>
+            <h3 className="text-base font-black text-[#0d1b3e] mt-3">Exclusive Recruiter Offer</h3>
+            <p className="text-xs text-gray-500 mt-1">Pack of 10 Job Postings & Naukri database access (250 CVs)</p>
+
+            <div className="my-6 p-4 bg-[#f0f5ff] rounded-2xl border border-blue-50 text-left space-y-2">
+              <div className="flex justify-between text-xs font-semibold text-gray-600">
+                <span>Standard price</span>
+                <span className="line-through">₹10,000</span>
+              </div>
+              <div className="flex justify-between text-xs font-black text-gray-700">
+                <span>Discount price (50% Off)</span>
+                <span className="text-[#0d2b6b]">₹4,999</span>
+              </div>
+              <div className="flex justify-between text-xs font-black text-gray-700 pt-2 border-t border-blue-100">
+                <span>Sub total</span>
+                <span>₹4,999</span>
+              </div>
+              <div className="flex justify-between text-xs font-black text-gray-700">
+                <span>Estimated GST (18%)</span>
+                <span>₹900</span>
+              </div>
+              <div className="flex justify-between text-sm font-black text-[#0d1b3e] pt-2 border-t border-blue-100">
+                <span>Total payable amount</span>
+                <span className="text-[#22c36a]">₹5,899</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  alert('Thank you! Initializing premium payment checkout...');
+                  setShowOfferPopup(false);
+                }}
+                className="w-full bg-[#22c36a] hover:bg-[#1aad5c] text-white font-black text-xs py-3.5 rounded-xl uppercase tracking-wider shadow-md cursor-pointer"
+              >
+                Proceed To Purchase
+              </button>
+              <button
+                onClick={() => setShowOfferPopup(false)}
+                className="w-full border border-gray-200 hover:bg-gray-50 text-gray-500 font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

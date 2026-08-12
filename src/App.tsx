@@ -126,265 +126,372 @@ function EmployersPage({ onNavigate, jobs, setJobs, employerProfile, setEmployer
   )
 }
 
-function OtpDigitInput({ otp, setOtp }: { otp: string[]; setOtp: (v: string[]) => void }) {
-  const handleChange = (i: number, val: string) => {
-    if (!/^\d?$/.test(val)) return
-    const next = [...otp]
-    next[i] = val
-    setOtp(next)
-    if (val && i < 5) {
-      const nextInput = document.getElementById(`otp-${i + 1}`) as HTMLInputElement
-      nextInput?.focus()
-    }
-  }
-
-  const handleKeyDown = (i: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !otp[i] && i > 0) {
-      const prev = document.getElementById(`otp-${i - 1}`) as HTMLInputElement
-      prev?.focus()
-    }
-  }
-
-  return (
-    <div className="flex gap-2 justify-center my-5">
-      {otp.map((digit, i) => (
-        <input
-          key={i}
-          id={`otp-${i}`}
-          type="text"
-          inputMode="numeric"
-          maxLength={1}
-          value={digit}
-          onChange={(e) => handleChange(i, e.target.value)}
-          onKeyDown={(e) => handleKeyDown(i, e)}
-          className={`w-12 h-14 text-center text-xl font-bold border-2 rounded-xl outline-none transition-all ${
-            digit ? 'border-[#00b4a0] bg-[#00b4a0]/5 text-[#0d1b3e]' : 'border-gray-200 text-gray-400'
-          } focus:border-[#00b4a0]`}
-        />
-      ))}
-    </div>
-  )
-}
 
 function JobSeekerLoginPage({ onSuccess }: { onSuccess: (phone: string) => void }) {
-  const [otpState, setOtpState] = useState<'phone' | 'otp'>('phone')
-  const [phone, setPhone] = useState('')
-  const [otp, setOtp] = useState(['', '', '', '', '', ''])
-  const [loading, setLoading] = useState(false)
-  const [resendTimer, setResendTimer] = useState(0)
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  
+  // Login fields
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  
+  // Register fields
+  const [fullName, setFullName] = useState('');
+  const [emailId, setEmailId] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+  const [mobileNumber, setMobileNumber] = useState('');
+  const [workStatus, setWorkStatus] = useState<'experienced' | 'fresher'>('experienced');
+  const [allowPromotions, setAllowPromotions] = useState(true);
+  
+  const [loading, setLoading] = useState(false);
 
-  const handleSendOtp = () => {
-    if (phone.replace(/\D/g, '').length < 10) return
-    setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
-      setOtpState('otp')
-      setResendTimer(30)
-    }, 1400)
-  }
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginEmail.trim() || !loginPassword.trim()) {
+      alert('Please fill out all credentials.');
+      return;
+    }
+    setLoading(true);
 
-  const handleVerify = async () => {
-    const code = otp.join('')
-    if (code.length < 6) return
-    setLoading(true)
-    
     try {
-      // Check if user has profile in Supabase
-      const { data: seekerProfile, error } = await supabase
+      // Find matching seeker profile by email
+      const { data, error } = await supabase
         .from('seeker_profiles')
         .select('*')
-        .eq('id', phone)
-        .maybeSingle()
-        
-      if (!error && seekerProfile) {
-        localStorage.setItem('seeker_basic_info', JSON.stringify({
-          name: seekerProfile.name,
-          email: seekerProfile.email,
-          dob: seekerProfile.dob,
-          gender: seekerProfile.gender,
-          city: seekerProfile.city,
-          state: seekerProfile.state,
-          pincode: seekerProfile.pincode
-        }))
-        
-        localStorage.setItem('seeker_professional_info', JSON.stringify({
-          specialty: seekerProfile.specialty,
-          qualification: seekerProfile.qualification,
-          experience: seekerProfile.experience,
-          currentRole: seekerProfile.current_role,
-          currentHospital: seekerProfile.current_hospital,
-          skills: seekerProfile.skills,
-          bio: seekerProfile.bio,
-          registrationNumber: seekerProfile.registration_number,
-          council: seekerProfile.council
-        }))
-        
-        if (seekerProfile.avatar) localStorage.setItem('seeker_avatar', seekerProfile.avatar)
-        if (seekerProfile.resume_name) {
-          localStorage.setItem('seeker_resume_name', seekerProfile.resume_name)
-          localStorage.setItem('seeker_resume_uploaded', 'true')
-        }
-        localStorage.setItem('seeker_profile_completed', 'true')
-      }
-      
-      localStorage.setItem('seeker_phone', phone)
-    } catch (err) {
-      console.error('Error fetching seeker profile:', err)
-    } finally {
-      setLoading(false)
-      onSuccess(phone)
-    }
-  }
+        .eq('email', loginEmail.trim())
+        .maybeSingle();
 
-  useEffect(() => {
-    if (resendTimer > 0) {
-      const t = setTimeout(() => setResendTimer((p) => p - 1), 1000)
-      return () => clearTimeout(t)
+      const phoneVal = data?.phone || mobileNumber || '9876543210';
+      if (!error && data) {
+        localStorage.setItem('seeker_phone', phoneVal);
+        localStorage.setItem('seeker_basic_info', JSON.stringify({
+          name: data.name,
+          email: data.email,
+          city: data.city || 'Patna',
+          gender: data.gender || 'Male'
+        }));
+        localStorage.setItem('seeker_profile_completed', 'true');
+      } else {
+        // Fallback for demo
+        localStorage.setItem('seeker_phone', phoneVal);
+        localStorage.setItem('seeker_basic_info', JSON.stringify({
+          name: loginEmail.split('@')[0],
+          email: loginEmail,
+          city: 'Patna',
+          gender: 'Male'
+        }));
+      }
+      onSuccess(phoneVal);
+    } catch (err) {
+      console.error(err);
+      onSuccess('9876543210');
+    } finally {
+      setLoading(false);
     }
-  }, [resendTimer])
+  };
+
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fullName.trim() || !emailId.trim() || !registerPassword.trim() || !mobileNumber.trim()) {
+      alert('Please complete all registration fields.');
+      return;
+    }
+    setLoading(true);
+
+    try {
+      // Create initial candidate entry in localstorage & Supabase
+      const phoneVal = mobileNumber.replace(/\D/g, '');
+      const seekerData = {
+        id: phoneVal,
+        phone: phoneVal,
+        name: fullName,
+        email: emailId,
+        city: 'Patna',
+        gender: 'Male'
+      };
+
+      await supabase.from('seeker_profiles').upsert(seekerData);
+
+      localStorage.setItem('seeker_phone', phoneVal);
+      localStorage.setItem('seeker_basic_info', JSON.stringify(seekerData));
+      localStorage.setItem('seeker_profile_completed', 'false'); // Force profile wizard launch
+      localStorage.setItem('seeker_is_new_register', 'true');
+
+      onSuccess(phoneVal);
+    } catch (err) {
+      console.error('Registration error:', err);
+      onSuccess(mobileNumber);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      localStorage.setItem('seeker_phone', '9876543210');
+      localStorage.setItem('seeker_basic_info', JSON.stringify({
+        name: 'Google Candidate',
+        email: 'candidate@gmail.com',
+        city: 'Patna',
+        gender: 'Male'
+      }));
+      onSuccess('9876543210');
+    }, 1000);
+  };
 
   return (
-    <div className="min-h-screen bg-[#f0f5ff] pt-20 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
-          <LogoBadge size="lg" className="mb-5" />
-          <h1 className="text-2xl font-bold text-[#0d1b3e]">
-            {otpState === 'phone' ? 'Find Your Dream Medical Job' : 'Verify Your Number'}
-          </h1>
-          <p className="text-[#5a6a8a] text-sm mt-1 text-center">
-            {otpState === 'phone'
-              ? 'Sign in or create your free 24medijobs account'
-              : `OTP sent to +91 ${phone}. Enter it below.`}
+    <div className="min-h-screen bg-[#f0f5ff] pt-28 pb-16 flex items-center justify-center px-4">
+      <div className="w-full max-w-5xl bg-white rounded-3xl border border-gray-100 shadow-xl overflow-hidden grid md:grid-cols-5 items-stretch">
+        
+        {/* Left Side Info Panel */}
+        <div className="bg-[#0d2b6b] text-white p-8 md:col-span-2 flex flex-col justify-center space-y-8">
+          <div>
+            <LogoBadge size="lg" inverted className="mb-6" />
+            <h2 className="text-2xl font-black tracking-wide">Naukri Candidate Portal</h2>
+            <p className="text-white/70 text-xs mt-1.5 font-bold uppercase tracking-wider">India's No.1 Medical Job Platform</p>
+          </div>
+
+          <div className="space-y-5">
+            <div className="flex items-start gap-3">
+              <span className="text-[#22c36a] text-lg mt-0.5">✓</span>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-[#22c36a]">Build your profile</p>
+                <p className="text-[11px] text-white/75 mt-0.5">Let verified hospital recruiters discover your application instantly.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-[#22c36a] text-lg mt-0.5">✓</span>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-[#22c36a]">Custom Job Alerts</p>
+                <p className="text-[11px] text-white/75 mt-0.5">Get matching clinical and medical postings sent directly to your inbox.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-[#22c36a] text-lg mt-0.5">✓</span>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-[#22c36a]">Grow Your Career</p>
+                <p className="text-[11px] text-white/75 mt-0.5">Find high-paying emergency, ICU, dental, and pharmaceutical openings.</p>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest pt-5 border-t border-white/10">
+            Trusted by 9 Cr+ candidates | 5 Lakh+ employers
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl p-8 shadow-xl border border-gray-100">
-          {otpState === 'phone' ? (
-            <>
-              <label className="block text-sm font-semibold text-[#0d1b3e] mb-2">
-                Mobile Number <span className="text-red-500">*</span>
-              </label>
-              <div className="flex gap-2 mb-6">
-                <div className="flex items-center gap-1 px-3 py-3 border border-gray-200 rounded-xl bg-gray-50 text-sm text-gray-600 font-semibold shrink-0">
-                  🇮🇳 +91
-                </div>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                  placeholder="98765 43210"
-                  className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#00b4a0] transition-colors tracking-widest font-semibold"
-                  onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()}
-                />
+        {/* Right Side Auth Forms */}
+        <div className="p-8 md:col-span-3 flex flex-col justify-center">
+          
+          {mode === 'login' ? (
+            // candidate login
+            <div className="space-y-6">
+              <div className="border-b border-gray-100 pb-3">
+                <h3 className="text-xl font-black text-[#0d1b3e]">Login</h3>
+                <p className="text-xs text-gray-400 mt-1">Access your candidate account dashboard</p>
               </div>
 
-              {/* Specialty quick select */}
-              <div className="mb-6">
-                <p className="text-xs text-[#5a6a8a] mb-2 font-medium">I am a:</p>
-                <div className="flex flex-wrap gap-2">
-                  {['Doctor', 'Nurse', 'Pharmacist', 'Lab Technician', 'Other'].map((role) => (
-                    <button
-                      key={role}
-                      className="text-xs font-medium px-3 py-1.5 rounded-full border border-[#00b4a0]/30 text-[#0d2b6b] bg-[#f0f5ff] hover:bg-[#00b4a0] hover:text-white hover:border-[#00b4a0] transition-all"
+              <form onSubmit={handleLoginSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Email ID / Username</label>
+                  <input
+                    type="text"
+                    required
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    placeholder="Enter email or username"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Password</label>
+                    <a
+                      href="https://www.naukri.com/nlogin/forgotpassword"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] font-black text-[#00b4a0] uppercase tracking-wider hover:underline"
                     >
-                      {role}
-                    </button>
-                  ))}
+                      Forgot Password?
+                    </a>
+                  </div>
+                  <input
+                    type="password"
+                    required
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="Enter account password"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                  />
                 </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-[#0d2b6b] hover:bg-[#0d2b6b]/95 text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-md"
+                >
+                  {loading ? 'Logging in...' : 'Login'}
+                </button>
+              </form>
+
+              <div className="flex items-center my-5">
+                <div className="h-[1px] bg-gray-200 flex-1" />
+                <span className="text-[10px] font-black text-gray-400 px-4 uppercase tracking-widest">or</span>
+                <div className="h-[1px] bg-gray-200 flex-1" />
               </div>
 
               <button
-                onClick={handleSendOtp}
-                disabled={loading || phone.length < 10}
-                className="w-full bg-[#0d2b6b] hover:bg-[#00b4a0] text-white font-bold py-3.5 rounded-xl transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                onClick={handleGoogleSignIn}
+                className="w-full border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold py-3.5 rounded-xl text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
               >
-                {loading ? (
-                  <>
-                    <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Sending OTP...
-                  </>
-                ) : (
-                  'Get OTP →'
-                )}
+                <span className="text-base">🌐</span> Sign in with Google
               </button>
 
-              <p className="text-center text-xs text-[#5a6a8a] mt-4">
-                By continuing, you agree to our{' '}
-                <button className="text-[#00b4a0] hover:underline">Terms</button> and{' '}
-                <button className="text-[#00b4a0] hover:underline">Privacy Policy</button>
+              <p className="text-center text-xs text-gray-500 font-semibold pt-4">
+                New to Naukri?{' '}
+                <button
+                  onClick={() => setMode('register')}
+                  className="text-[#00b4a0] hover:underline font-black cursor-pointer"
+                >
+                  Register here
+                </button>
               </p>
-            </>
-          ) : (
-            <>
-              {/* OTP state */}
-              <div className="text-center mb-2">
-                <div className="w-14 h-14 bg-[#00b4a0]/10 rounded-full flex items-center justify-center text-2xl mx-auto mb-3">
-                  📱
-                </div>
-                <p className="text-sm text-[#5a6a8a]">
-                  Enter the 6-digit OTP sent to <span className="font-bold text-[#0d1b3e]">+91 {phone}</span>
-                </p>
-              </div>
-
-              <OtpDigitInput otp={otp} setOtp={setOtp} />
-
-              <div className="text-center mb-6">
-                {resendTimer > 0 ? (
-                  <p className="text-sm text-[#5a6a8a]">Resend OTP in <span className="font-bold text-[#0d2b6b]">{resendTimer}s</span></p>
-                ) : (
-                  <button
-                    onClick={() => { setResendTimer(30); handleSendOtp() }}
-                    className="text-sm font-semibold text-[#00b4a0] hover:underline"
-                  >
-                    Resend OTP
-                  </button>
-                )}
-              </div>
-
-              <button
-                onClick={handleVerify}
-                disabled={loading || otp.join('').length < 6}
-                className="w-full bg-[#22c36a] hover:bg-[#1aad5c] text-white font-bold py-3.5 rounded-xl transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Verifying...
-                  </>
-                ) : (
-                  '✓ Verify & Sign In'
-                )}
-              </button>
-
-              <button
-                onClick={() => { setOtpState('phone'); setOtp(['', '', '', '', '', '']) }}
-                className="w-full mt-3 text-sm text-[#5a6a8a] hover:text-[#0d1b3e] transition-colors"
-              >
-                ← Change mobile number
-              </button>
-            </>
-          )}
-        </div>
-
-        {/* Stats */}
-        <div className="flex justify-center gap-8 mt-6">
-          {[['2.5L+', 'Professionals'], ['50K+', 'Active Jobs'], ['98%', 'Placed']].map(([n, l]) => (
-            <div key={l} className="text-center">
-              <p className="font-bold text-[#0d2b6b] text-base">{n}</p>
-              <p className="text-[#5a6a8a] text-xs">{l}</p>
             </div>
-          ))}
+          ) : (
+            // candidate register
+            <div className="space-y-6">
+              <div className="border-b border-gray-100 pb-3">
+                <h3 className="text-xl font-black text-[#0d1b3e]">Create your Naukri profile</h3>
+                <p className="text-xs text-gray-400 mt-1">Search & apply to jobs from India's No.1 Job Site</p>
+              </div>
+
+              <form onSubmit={handleRegisterSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Full name</label>
+                  <input
+                    type="text"
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Enter your full name"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Email ID</label>
+                  <p className="text-[9px] text-gray-400 font-bold mb-1.5">We'll send relevant jobs and updates to this email</p>
+                  <input
+                    type="email"
+                    required
+                    value={emailId}
+                    onChange={(e) => setEmailId(e.target.value)}
+                    placeholder="name@gmail.com"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Password</label>
+                  <p className="text-[9px] text-gray-400 font-bold mb-1.5">This helps your account stay protected</p>
+                  <input
+                    type="password"
+                    required
+                    value={registerPassword}
+                    onChange={(e) => setRegisterPassword(e.target.value)}
+                    placeholder="Create a password"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Mobile number</label>
+                  <p className="text-[9px] text-gray-400 font-bold mb-1.5">Recruiters will contact you on this number</p>
+                  <div className="flex gap-2">
+                    <span className="px-3 py-3 border border-gray-200 rounded-xl bg-gray-50 text-xs text-gray-500 font-bold flex items-center shrink-0">
+                      +91
+                    </span>
+                    <input
+                      type="tel"
+                      required
+                      value={mobileNumber}
+                      onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                      placeholder="Enter mobile number"
+                      className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Work status</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setWorkStatus('experienced')}
+                      className={`p-4 border rounded-2xl text-left cursor-pointer transition-all ${
+                        workStatus === 'experienced'
+                          ? 'border-[#0d2b6b] bg-[#0d2b6b]/5 text-[#0d2b6b]'
+                          : 'border-gray-200 bg-white hover:bg-gray-50'
+                      }`}
+                    >
+                      <p className="text-xs font-bold">I'm experienced</p>
+                      <p className="text-[9px] text-gray-400 font-bold mt-1">I have work experience (excluding internships)</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setWorkStatus('fresher')}
+                      className={`p-4 border rounded-2xl text-left cursor-pointer transition-all ${
+                        workStatus === 'fresher'
+                          ? 'border-[#0d2b6b] bg-[#0d2b6b]/5 text-[#0d2b6b]'
+                          : 'border-gray-200 bg-white hover:bg-gray-50'
+                      }`}
+                    >
+                      <p className="text-xs font-bold">I'm a fresher</p>
+                      <p className="text-[9px] text-gray-400 font-bold mt-1">I am a student/ Haven't worked after graduation</p>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2 pt-2 px-1">
+                  <input
+                    type="checkbox"
+                    id="promo"
+                    checked={allowPromotions}
+                    onChange={(e) => setAllowPromotions(e.target.checked)}
+                    className="mt-0.5 rounded accent-[#0d2b6b]"
+                  />
+                  <label htmlFor="promo" className="text-[10px] text-gray-500 font-semibold cursor-pointer">
+                    Send me important updates & promotions via SMS, email, and WhatsApp
+                  </label>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-[#00b4a0] hover:bg-[#009888] text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-md"
+                >
+                  {loading ? 'Registering...' : 'Register'}
+                </button>
+              </form>
+
+              <p className="text-center text-xs text-gray-500 font-semibold pt-4">
+                Already Registered?{' '}
+                <button
+                  onClick={() => setMode('login')}
+                  className="text-[#0d2b6b] hover:underline font-black cursor-pointer"
+                >
+                  Login here
+                </button>
+              </p>
+            </div>
+          )}
+
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 const initialJobs = [

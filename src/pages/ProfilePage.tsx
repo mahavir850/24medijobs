@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import LogoBadge from '@/components/LogoBadge'
 import { supabase } from '../supabaseClient'
 
@@ -8,70 +8,166 @@ interface ProfilePageProps {
 }
 
 export default function ProfilePage({ phone = '', onNavigate }: ProfilePageProps) {
-  // Wizard steps state
-  const [step, setStep] = useState<'basic' | 'professional' | 'resume' | 'done'>('basic')
-  const [avatar, setAvatar] = useState<string | null>(null)
-  const [resumeFileName, setResumeFileName] = useState<string>('My_Resume.pdf')
-  const [resumeSize, setResumeSize] = useState<string>('145 KB')
-  const [resumeUploaded, setResumeUploaded] = useState(false)
-  
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const resumeInputRef = useRef<HTMLInputElement>(null)
-
-  // Profile data state
-  const [basic, setBasic] = useState({
-    name: '',
-    email: '',
-    dob: '1995-08-15',
-    gender: 'male' as 'male' | 'female' | 'other' | 'not_specified',
-    city: '',
-    state: '',
-    pincode: '',
-  })
-
-  const [professional, setProfessional] = useState({
-    specialty: '',
-    qualification: '',
-    experience: '',
-    currentRole: '',
-    currentHospital: '',
-    skills: '',
-    bio: '',
-    registrationNumber: '',
-    council: '',
-  })
-
-  // Mode state: Display vs Wizard vs Edit Mode
+  // Wizard steps: 'employment' | 'education' | 'preferences'
+  const [step, setStep] = useState<'employment' | 'education' | 'preferences'>('employment')
   const [profileSaved, setProfileSaved] = useState<boolean>(() => {
     return localStorage.getItem('seeker_profile_completed') === 'true'
   })
-  const [isEditMode, setIsEditMode] = useState<boolean>(false)
+  
+  // Edit states for sections
+  const [isEditingHeadline, setIsEditingHeadline] = useState(false)
+  const [isEditingEmployment, setIsEditingEmployment] = useState(false)
+  const [isEditingEducation, setIsEditingEducation] = useState(false)
+  const [isEditingPreferences, setIsEditingPreferences] = useState(false)
+  const [isEditingContact, setIsEditingContact] = useState(false)
 
-  // Load profile data from local storage on mount
+  // Profile data states
+  const [basic, setBasic] = useState({
+    name: 'Google Candidate',
+    email: 'candidate@gmail.com',
+    phone: phone || '9876543210',
+    gender: 'Male'
+  })
+
+  const [employment, setEmployment] = useState({
+    isEmployed: 'Yes',
+    experienceYears: '2-5 years',
+    companyName: 'DigiPhlox',
+    jobTitle: 'Flutter Developer',
+    city: 'Patna',
+    duration: '2021 to Present',
+    salary: '₹ 5,64,000 per year',
+    noticePeriod: '15 Days or less'
+  })
+
+  const [education, setEducation] = useState({
+    qualification: 'Graduation/Diploma',
+    course: 'B.Tech / B.E.',
+    courseType: 'Full Time',
+    specialization: 'Computer Science and Engineering (CSE)',
+    university: 'Chandigarh University, Mohali',
+    startYear: '2018',
+    passYear: '2023'
+  })
+
+  const [preferences, setPreferences] = useState({
+    headline: 'Flutter Developer with B.Tech / B.E. in Computer Science and Engineering (CSE) currently living in Patna',
+    preferredLocations: ['Patna', 'Remote'],
+    preferredSalary: '₹ 6,00,000 per year',
+    gender: 'Male'
+  })
+
+  // Resume upload state
+  const [resumeFileName, setResumeFileName] = useState<string>('My_Resume.pdf')
+  const [resumeSize, setResumeSize] = useState<string>('145 KB')
+  const [resumeUploaded, setResumeUploaded] = useState(true)
+  const resumeInputRef = useRef<HTMLInputElement>(null)
+
+  // Load saved details from LocalStorage or Supabase
   useEffect(() => {
-    const savedBasic = localStorage.getItem('seeker_basic_info')
-    const savedProf = localStorage.getItem('seeker_professional_info')
-    const savedAvatar = localStorage.getItem('seeker_avatar')
-    const savedResume = localStorage.getItem('seeker_resume_uploaded')
-    const savedResumeName = localStorage.getItem('seeker_resume_name')
+    const phoneVal = phone || localStorage.getItem('seeker_phone') || '9876543210'
+    
+    // Check if new registration flag exists
+    const isNewReg = localStorage.getItem('seeker_is_new_register') === 'true'
+    if (isNewReg) {
+      setProfileSaved(false)
+      setStep('employment')
+      localStorage.removeItem('seeker_is_new_register')
+    }
 
-    if (savedBasic) setBasic(JSON.parse(savedBasic))
-    if (savedProf) setProfessional(JSON.parse(savedProf))
-    if (savedAvatar) setAvatar(savedAvatar)
-    if (savedResume === 'true') setResumeUploaded(true)
-    if (savedResumeName) setResumeFileName(savedResumeName)
-  }, [])
+    const loadData = async () => {
+      // Local storage check
+      const localBasic = localStorage.getItem('seeker_basic')
+      const localEmp = localStorage.getItem('seeker_employment')
+      const localEdu = localStorage.getItem('seeker_education')
+      const localPref = localStorage.getItem('seeker_preferences')
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (ev) => {
-        const dataUrl = ev.target?.result as string
-        setAvatar(dataUrl)
-        localStorage.setItem('seeker_avatar', dataUrl)
+      if (localBasic) setBasic(JSON.parse(localBasic))
+      if (localEmp) setEmployment(JSON.parse(localEmp))
+      if (localEdu) setEducation(JSON.parse(localEdu))
+      if (localPref) setPreferences(JSON.parse(localPref))
+
+      try {
+        const { data, error } = await supabase
+          .from('seeker_profiles')
+          .select('*')
+          .eq('id', phoneVal)
+          .maybeSingle()
+
+        if (!error && data) {
+          if (data.name) setBasic(prev => ({ ...prev, name: data.name, email: data.email || prev.email, phone: data.phone || prev.phone }))
+          if (data.current_hospital) {
+            setEmployment(prev => ({
+              ...prev,
+              companyName: data.current_hospital,
+              jobTitle: data.current_role || prev.jobTitle,
+              experienceYears: data.experience || prev.experienceYears,
+              city: data.city || prev.city
+            }))
+          }
+          if (data.qualification) {
+            setEducation(prev => ({
+              ...prev,
+              qualification: data.qualification,
+              course: data.council || prev.course, // reusing council for course
+              specialization: data.specialty || prev.specialization
+            }))
+          }
+          if (data.bio) {
+            setPreferences(prev => ({
+              ...prev,
+              headline: data.bio,
+              preferredLocations: data.skills ? data.skills.split(', ') : prev.preferredLocations
+            }))
+          }
+          setProfileSaved(true)
+        }
+      } catch (err) {
+        console.error('Error loading Supabase seeker data:', err)
       }
-      reader.readAsDataURL(file)
+    }
+
+    loadData()
+  }, [phone])
+
+  const handleSaveToDb = async (updatedBasic = basic, updatedEmp = employment, updatedEdu = education, updatedPref = preferences) => {
+    const phoneVal = phone || localStorage.getItem('seeker_phone') || '9876543210'
+    
+    // Save to local storage
+    localStorage.setItem('seeker_basic', JSON.stringify(updatedBasic))
+    localStorage.setItem('seeker_employment', JSON.stringify(updatedEmp))
+    localStorage.setItem('seeker_education', JSON.stringify(updatedEdu))
+    localStorage.setItem('seeker_preferences', JSON.stringify(updatedPref))
+    localStorage.setItem('seeker_profile_completed', 'true')
+
+    try {
+      const seekerData = {
+        id: phoneVal,
+        phone: phoneVal,
+        name: updatedBasic.name,
+        email: updatedBasic.email,
+        dob: '1998-05-12',
+        gender: updatedPref.gender,
+        city: updatedEmp.city,
+        state: 'Bihar',
+        pincode: '800001',
+        avatar: '',
+        specialty: updatedEdu.specialization,
+        qualification: updatedEdu.qualification,
+        experience: updatedEmp.experienceYears,
+        current_role: updatedEmp.jobTitle,
+        current_hospital: updatedEmp.companyName,
+        registration_number: updatedEmp.noticePeriod,
+        council: updatedEdu.course,
+        skills: updatedPref.preferredLocations.join(', '),
+        bio: updatedPref.headline,
+        resume_name: resumeFileName,
+        resume_url: ''
+      }
+
+      await supabase.from('seeker_profiles').upsert(seekerData)
+    } catch (err) {
+      console.error('Error saving candidate profile:', err)
     }
   }
 
@@ -80,992 +176,811 @@ export default function ProfilePage({ phone = '', onNavigate }: ProfilePageProps
     if (file) {
       setResumeFileName(file.name)
       setResumeSize((file.size / 1024).toFixed(0) + ' KB')
-      localStorage.setItem('seeker_resume_name', file.name)
-      setTimeout(() => {
-        setResumeUploaded(true)
-        localStorage.setItem('seeker_resume_uploaded', 'true')
-      }, 1200)
+      setResumeUploaded(true)
     }
   }
 
-  const handleSaveWizard = async () => {
-    localStorage.setItem('seeker_basic_info', JSON.stringify(basic))
-    localStorage.setItem('seeker_professional_info', JSON.stringify(professional))
-    localStorage.setItem('seeker_profile_completed', 'true')
-
-    try {
-      const seekerData = {
-        id: phone || localStorage.getItem('seeker_phone') || '',
-        phone: phone || localStorage.getItem('seeker_phone') || '',
-        name: basic.name,
-        email: basic.email,
-        dob: basic.dob,
-        gender: basic.gender,
-        city: basic.city,
-        state: basic.state,
-        pincode: basic.pincode,
-        avatar: avatar || '',
-        specialty: professional.specialty,
-        qualification: professional.qualification,
-        experience: professional.experience,
-        current_role: professional.currentRole,
-        current_hospital: professional.currentHospital,
-        registration_number: professional.registrationNumber,
-        council: professional.council,
-        skills: professional.skills,
-        bio: professional.bio,
-        resume_name: resumeFileName,
-        resume_url: ''
-      }
-      await supabase.from('seeker_profiles').upsert(seekerData)
-    } catch (err) {
-      console.error('Error saving profile to Supabase:', err)
-    }
-
+  // ── WIZARD SUBMIT ──
+  const handleWizardSubmit = () => {
+    handleSaveToDb()
     setProfileSaved(true)
-    setIsEditMode(false)
   }
 
-  const handleUpdateProfileSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!basic.name || !basic.email || !basic.city || !professional.specialty || !professional.qualification) {
-      alert('Please fill in all mandatory fields marked with *')
-      return
-    }
-    localStorage.setItem('seeker_basic_info', JSON.stringify(basic))
-    localStorage.setItem('seeker_professional_info', JSON.stringify(professional))
-    localStorage.setItem('seeker_profile_completed', 'true')
+  // Location suggestions
+  const locationSuggestions = ['Bengaluru', 'Mumbai', 'Pune', 'Chennai', 'Hyderabad', 'Gurugram', 'Noida', 'Ahmedabad', 'Kolkata', 'Delhi / NCR', 'Remote']
 
-    try {
-      const seekerData = {
-        id: phone || localStorage.getItem('seeker_phone') || '',
-        phone: phone || localStorage.getItem('seeker_phone') || '',
-        name: basic.name,
-        email: basic.email,
-        dob: basic.dob,
-        gender: basic.gender,
-        city: basic.city,
-        state: basic.state,
-        pincode: basic.pincode,
-        avatar: avatar || '',
-        specialty: professional.specialty,
-        qualification: professional.qualification,
-        experience: professional.experience,
-        current_role: professional.currentRole,
-        current_hospital: professional.currentHospital,
-        registration_number: professional.registrationNumber,
-        council: professional.council,
-        skills: professional.skills,
-        bio: professional.bio,
-        resume_name: resumeFileName,
-        resume_url: ''
-      }
-      await supabase.from('seeker_profiles').upsert(seekerData)
-    } catch (err) {
-      console.error('Error updating profile in Supabase:', err)
-    }
-
-    setProfileSaved(true)
-    setIsEditMode(false)
-    alert('🎉 Profile updated successfully!')
-  }
-
-  const steps = [
-    { id: 'basic', label: 'Basic Info', icon: '👤' },
-    { id: 'professional', label: 'Professional', icon: '🩺' },
-    { id: 'resume', label: 'Resume', icon: '📄' },
-    { id: 'done', label: 'Done', icon: '✅' },
-  ]
-
-  const stepIndex = steps.findIndex((s) => s.id === step)
-  const progress = ((stepIndex + 1) / steps.length) * 100
-
-  // ── VIEW: Profile Dashboard (Displaying saved details) ──
-  const renderProfileDashboard = () => {
+  // ── VIEW: WIZARD FLOW ──
+  if (!profileSaved) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-24 pb-12">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          {/* Header Dashboard Profile Banner */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8 mb-8 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
-              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-[#00b4a0]/15 shrink-0 bg-[#f0f5ff] flex items-center justify-center text-3xl shadow-sm relative">
-                {avatar ? (
-                  <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <span>👤</span>
-                )}
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-[#0d1b3e] flex items-center justify-center sm:justify-start gap-2">
-                  {basic.name}
-                  <span className="bg-[#00b4a0]/15 text-[#00b4a0] text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Candidate</span>
-                </h1>
-                <p className="text-[#5a6a8a] text-sm font-semibold font-mono mt-0.5">📞 +91 {phone || '98765 43210'}</p>
-                <p className="text-xs text-gray-400 mt-1">📍 {basic.city}, {basic.state || 'India'}</p>
-              </div>
+      <div className="min-h-screen bg-[#f0f5ff] pt-24 pb-12 flex items-center justify-center px-4">
+        <div className="w-full max-w-3xl bg-white rounded-3xl border border-gray-100 shadow-xl overflow-hidden">
+          
+          {/* Header Indicators */}
+          <div className="bg-[#0d2b6b] text-white p-6 flex justify-between items-center">
+            <div>
+              <h2 className="text-lg font-black">Configure Candidate Profile</h2>
+              <p className="text-[10px] text-white/70 font-bold uppercase tracking-wider mt-0.5">Let Medical Recruiters Find You</p>
             </div>
-            <div className="flex gap-3 w-full sm:w-auto shrink-0 justify-center">
-              <button
-                onClick={() => setIsEditMode(true)}
-                className="bg-[#0d2b6b] hover:bg-[#00b4a0] text-white font-semibold px-6 py-3 rounded-xl transition-all text-sm shadow-md flex items-center gap-1.5"
-              >
-                ✏️ Edit Profile
-              </button>
-              <button
-                onClick={() => onNavigate('jobs')}
-                className="bg-[#00b4a0] hover:bg-[#009888] text-white font-semibold px-6 py-3 rounded-xl transition-all text-sm shadow-md"
-              >
-                Find Jobs
-              </button>
-            </div>
+            <span className="bg-[#00b4a0] text-white text-[10px] font-black px-3.5 py-1 rounded-full uppercase tracking-wider">
+              {step === 'employment' && 'Step 1 of 3: Employment'}
+              {step === 'education' && 'Step 2 of 3: Education'}
+              {step === 'preferences' && 'Step 3 of 3: Preferences'}
+            </span>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Sidebar Details Card */}
-            <div className="space-y-6">
-              {/* Personal Details */}
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-                <h3 className="font-bold text-[#0d1b3e] text-base mb-4 border-b border-gray-100 pb-2">Personal Information</h3>
-                <div className="space-y-3 text-sm">
-                  <div>
-                    <p className="text-xs text-gray-400 font-semibold">Email Address</p>
-                    <p className="font-semibold text-gray-700 mt-0.5">{basic.email || 'Not filled'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400 font-semibold">Date of Birth</p>
-                    <p className="font-semibold text-gray-700 mt-0.5">{basic.dob || 'Not filled'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400 font-semibold">Gender</p>
-                    <p className="font-semibold text-gray-700 mt-0.5 uppercase">{basic.gender || 'Not specified'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400 font-semibold">Pincode</p>
-                    <p className="font-semibold text-gray-700 mt-0.5">{basic.pincode || 'Not filled'}</p>
-                  </div>
+          <div className="p-8">
+            {/* Step 1: Employment */}
+            {step === 'employment' && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-base font-black text-[#0d1b3e]">Employment Details</h3>
+                  <p className="text-xs text-gray-400">These details help recruiters identify your professional experience</p>
                 </div>
-              </div>
 
-              {/* Resume Card */}
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-                <h3 className="font-bold text-[#0d1b3e] text-base mb-4 border-b border-gray-100 pb-2">Uploaded Resume</h3>
-                {resumeUploaded ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 bg-green-50/50 p-3 rounded-xl border border-green-100">
-                      <div className="text-3xl">📄</div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-gray-700 truncate">{resumeFileName}</p>
-                        <p className="text-[10px] text-gray-400">{resumeSize}</p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Are you currently employed?</label>
+                    <div className="flex gap-3">
+                      {['Yes', 'No'].map((status) => (
+                        <button
+                          key={status}
+                          type="button"
+                          onClick={() => setEmployment({ ...employment, isEmployed: status })}
+                          className={`px-6 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                            employment.isEmployed === status
+                              ? 'bg-[#0d2b6b] text-white'
+                              : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                          }`}
+                        >
+                          {status}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Total work experience</label>
+                    <input
+                      type="text"
+                      value={employment.experienceYears}
+                      onChange={(e) => setEmployment({ ...employment, experienceYears: e.target.value })}
+                      placeholder="e.g. 3 years, 6 months"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                    />
+                  </div>
+
+                  {employment.isEmployed === 'Yes' && (
+                    <>
+                      <div>
+                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Company name</label>
+                        <input
+                          type="text"
+                          value={employment.companyName}
+                          onChange={(e) => setEmployment({ ...employment, companyName: e.target.value })}
+                          placeholder="e.g. DigiPhlox"
+                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                        />
                       </div>
-                    </div>
-                    <button 
-                      onClick={() => resumeInputRef.current?.click()} 
-                      className="w-full text-center text-xs font-semibold text-[#00b4a0] border border-[#00b4a0] py-2.5 rounded-xl hover:bg-[#00b4a0] hover:text-white transition-all"
-                    >
-                      Replace Resume PDF
-                    </button>
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-sm text-gray-400 mb-3">No resume uploaded</p>
-                    <button 
-                      onClick={() => resumeInputRef.current?.click()} 
-                      className="text-xs font-bold text-white bg-[#00b4a0] px-4 py-2.5 rounded-xl hover:bg-[#009888] transition-colors"
-                    >
-                      Upload Resume
-                    </button>
-                  </div>
-                )}
-                <input ref={resumeInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleResumeChange} />
-              </div>
-            </div>
 
-            {/* Main Profile Info Grid */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Credentials / Details */}
-              <div className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm">
-                <h2 className="text-xl font-bold text-[#0d1b3e] mb-6 border-b border-gray-100 pb-3 flex items-center gap-1.5">
-                  <span>🩺</span> Professional Credentials
-                </h2>
-
-                <div className="grid sm:grid-cols-2 gap-x-6 gap-y-5">
-                  <div>
-                    <p className="text-xs text-gray-400 font-semibold">Medical Specialty</p>
-                    <p className="font-bold text-[#0d1b3e] text-sm mt-1">{professional.specialty || 'Not filled'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400 font-semibold">Highest Qualification</p>
-                    <p className="font-bold text-[#0d1b3e] text-sm mt-1">{professional.qualification || 'Not filled'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400 font-semibold">Years of Experience</p>
-                    <p className="font-bold text-[#0d1b3e] text-sm mt-1">{professional.experience || 'Not filled'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400 font-semibold">Current Role / Designation</p>
-                    <p className="font-bold text-[#0d1b3e] text-sm mt-1">{professional.currentRole || 'Not filled'}</p>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <p className="text-xs text-gray-400 font-semibold">Current Hospital / Institution</p>
-                    <p className="font-bold text-[#0d1b3e] text-sm mt-1">{professional.currentHospital || 'Not filled'}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* License Registration */}
-              <div className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm">
-                <h2 className="text-xl font-bold text-[#0d1b3e] mb-6 border-b border-gray-100 pb-3 flex items-center gap-1.5">
-                  <span>📜</span> Registration details
-                </h2>
-                <div className="grid sm:grid-cols-2 gap-6">
-                  <div>
-                    <p className="text-xs text-gray-400 font-semibold">Medical Registration No.</p>
-                    <p className="font-bold text-[#0d1b3e] text-sm mt-1 font-mono">{professional.registrationNumber || 'Not verified'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400 font-semibold">Registration Council</p>
-                    <p className="font-bold text-[#0d1b3e] text-sm mt-1">{professional.council || 'Not selected'}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Skills */}
-              <div className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm">
-                <h2 className="text-xl font-bold text-[#0d1b3e] mb-4 border-b border-gray-100 pb-3">Key Skills & Expertise</h2>
-                <div className="flex flex-wrap gap-2">
-                  {professional.skills ? (
-                    professional.skills.split(',').map((skill) => (
-                      <span key={skill.trim()} className="text-xs font-semibold px-3.5 py-2 bg-[#00b4a0]/10 text-[#00b4a0] rounded-xl border border-[#00b4a0]/15">
-                        {skill.trim()}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-sm text-gray-400">No skills added</span>
+                      <div>
+                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Current job title</label>
+                        <input
+                          type="text"
+                          value={employment.jobTitle}
+                          onChange={(e) => setEmployment({ ...employment, jobTitle: e.target.value })}
+                          placeholder="e.g. Flutter Developer"
+                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                        />
+                      </div>
+                    </>
                   )}
-                </div>
-              </div>
 
-              {/* Bio Summary */}
-              {professional.bio && (
-                <div className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm">
-                  <h2 className="text-xl font-bold text-[#0d1b3e] mb-4 border-b border-gray-100 pb-3">Professional Summary</h2>
-                  <div className="border-l-4 border-[#00b4a0] pl-4 italic text-[#5a6a8a] text-sm leading-relaxed">
-                    "{professional.bio}"
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // ── VIEW: Unified Edit Form ──
-  const renderEditProfileForm = () => {
-    return (
-      <div className="min-h-screen bg-gray-50 pt-24 pb-12">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
-            <div className="flex items-center justify-between mb-8 border-b border-gray-100 pb-4">
-              <div>
-                <h2 className="text-2xl font-bold text-[#0d1b3e]">Edit Profile Details</h2>
-                <p className="text-xs text-gray-500 mt-1">Keep your details updated so hospitals can hire you</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsEditMode(false)}
-                className="text-sm font-semibold text-gray-500 hover:text-[#0d2b6b]"
-              >
-                Cancel
-              </button>
-            </div>
-
-            <form onSubmit={handleUpdateProfileSubmit} className="space-y-6">
-              {/* Profile Pic Upload */}
-              <div className="flex flex-col items-center gap-3 mb-6">
-                <div 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-24 h-24 rounded-full bg-[#f0f5ff] border-2 border-dashed border-[#00b4a0] flex items-center justify-center cursor-pointer overflow-hidden relative group shadow-inner"
-                >
-                  {avatar ? (
-                    <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="text-center p-2">
-                      <span className="text-3xl">👤</span>
-                      <p className="text-[10px] text-[#00b4a0] font-semibold mt-1">Upload Photo</p>
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-full">
-                    <span className="text-white text-xs font-semibold">Change</span>
-                  </div>
-                </div>
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
-                <p className="text-xs text-[#5a6a8a] font-medium">Profile Photo</p>
-              </div>
-
-              {/* Basic Section */}
-              <div>
-                <h3 className="text-sm font-bold text-gray-700 mb-3 border-l-4 border-[#00b4a0] pl-2 uppercase tracking-wider">Basic Information</h3>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name <span className="text-red-500">*</span></label>
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Current City</label>
+                    <p className="text-[9px] text-gray-400 font-bold mb-1.5">This helps recruiters know your location preferences</p>
                     <input
                       type="text"
-                      required
-                      value={basic.name}
-                      onChange={(e) => setBasic(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors"
+                      value={employment.city}
+                      onChange={(e) => setEmployment({ ...employment, city: e.target.value })}
+                      placeholder="e.g. Patna"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
                     />
                   </div>
+
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Email Address <span className="text-red-500">*</span></label>
-                    <input
-                      type="email"
-                      required
-                      value={basic.email}
-                      onChange={(e) => setBasic(prev => ({ ...prev, email: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone Number</label>
-                    <input
-                      type="tel"
-                      value={phone || '9876543210'}
-                      readOnly
-                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50 text-gray-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Date of Birth</label>
-                    <input
-                      type="date"
-                      value={basic.dob}
-                      onChange={(e) => setBasic(prev => ({ ...prev, dob: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Gender</label>
-                    <select
-                      value={basic.gender}
-                      onChange={(e) => setBasic(prev => ({ ...prev, gender: e.target.value as any }))}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors bg-white text-gray-700"
-                    >
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other</option>
-                      <option value="not_specified">Prefer not to say</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">City <span className="text-red-500">*</span></label>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Duration</label>
                     <input
                       type="text"
-                      required
-                      value={basic.city}
-                      onChange={(e) => setBasic(prev => ({ ...prev, city: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors"
+                      value={employment.duration}
+                      onChange={(e) => setEmployment({ ...employment, duration: e.target.value })}
+                      placeholder="e.g. 2021 to Present"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">State</label>
-                    <select
-                      value={basic.state}
-                      onChange={(e) => setBasic(prev => ({ ...prev, state: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors bg-white text-gray-700"
-                    >
-                      <option value="">Select State</option>
-                      {['Maharashtra', 'Delhi', 'Karnataka', 'Tamil Nadu', 'Telangana', 'Gujarat', 'Rajasthan', 'West Bengal', 'Uttar Pradesh', 'Punjab', 'Haryana', 'Kerala', 'Madhya Pradesh', 'Bihar'].map((s) => (
-                        <option key={s}>{s}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
 
-              {/* Professional Credentials Section */}
-              <div className="border-t border-gray-100 pt-6">
-                <h3 className="text-sm font-bold text-gray-700 mb-3 border-l-4 border-[#00b4a0] pl-2 uppercase tracking-wider">Professional details</h3>
-                <div className="grid sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Medical Specialty <span className="text-red-500">*</span></label>
-                    <select
-                      value={professional.specialty}
-                      onChange={(e) => setProfessional(prev => ({ ...prev, specialty: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors bg-white text-gray-700"
-                    >
-                      <option value="">Select Specialty</option>
-                      {['Doctor / Physician', 'Nurse', 'Pharmacist', 'Lab Technician', 'Radiologist', 'Physiotherapist', 'Dentist', 'Psychiatrist', 'Pediatrician', 'Emergency Medicine', 'Medical Administration', 'Allied Health'].map((s) => (
-                        <option key={s}>{s}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Highest Qualification <span className="text-red-500">*</span></label>
-                    <select
-                      value={professional.qualification}
-                      onChange={(e) => setProfessional(prev => ({ ...prev, qualification: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors bg-white text-gray-700"
-                    >
-                      <option value="">Select Qualification</option>
-                      {['MBBS', 'MD', 'MS', 'DNB', 'GNM', 'B.Sc Nursing', 'M.Sc Nursing', 'B.Pharm', 'M.Pharm', 'BMLT', 'DMLT', 'BPT', 'MPT', 'BDS', 'MDS', 'BAMS', 'BHMS'].map((q) => (
-                        <option key={q}>{q}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Years of Experience <span className="text-red-500">*</span></label>
-                    <select
-                      value={professional.experience}
-                      onChange={(e) => setProfessional(prev => ({ ...prev, experience: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors bg-white text-gray-700"
-                    >
-                      <option value="">Select Experience</option>
-                      <option>Fresher (0 years)</option>
-                      <option>1 year</option>
-                      <option>2–3 years</option>
-                      <option>4–6 years</option>
-                      <option>7–10 years</option>
-                      <option>10+ years</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Current Role / Designation</label>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Annual salary</label>
                     <input
                       type="text"
-                      value={professional.currentRole}
-                      onChange={(e) => setProfessional(prev => ({ ...prev, currentRole: e.target.value }))}
-                      placeholder="e.g. Senior Resident Doctor"
-                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors"
+                      value={employment.salary}
+                      onChange={(e) => setEmployment({ ...employment, salary: e.target.value })}
+                      placeholder="e.g. ₹ 5,64,000 per year"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
                     />
                   </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Current Hospital / Institution</label>
-                    <input
-                      type="text"
-                      value={professional.currentHospital}
-                      onChange={(e) => setProfessional(prev => ({ ...prev, currentHospital: e.target.value }))}
-                      placeholder="e.g. Apollo Hospitals"
-                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors"
-                    />
-                  </div>
-                </div>
-              </div>
 
-              {/* License Registration Section */}
-              <div className="border-t border-gray-100 pt-6">
-                <h3 className="text-sm font-bold text-gray-700 mb-3 border-l-4 border-[#00b4a0] pl-2 uppercase tracking-wider">Registration details</h3>
-                <div className="grid sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Medical Registration No.</label>
-                    <input
-                      type="text"
-                      value={professional.registrationNumber}
-                      onChange={(e) => setProfessional(prev => ({ ...prev, registrationNumber: e.target.value }))}
-                      placeholder="e.g. MH-12345"
-                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Registration Council</label>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Notice period</label>
                     <select
-                      value={professional.council}
-                      onChange={(e) => setProfessional(prev => ({ ...prev, council: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors bg-white text-gray-700"
+                      value={employment.noticePeriod}
+                      onChange={(e) => setEmployment({ ...employment, noticePeriod: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors bg-white text-gray-700"
                     >
-                      <option value="">Select Council</option>
-                      {['Medical Council of India (NMC)', 'Indian Nursing Council', 'Pharmacy Council of India', 'Dental Council of India', 'State Medical Council', 'Other'].map((c) => (
-                        <option key={c}>{c}</option>
-                      ))}
+                      <option>15 Days or less</option>
+                      <option>30 Days</option>
+                      <option>45 Days</option>
+                      <option>2 Months</option>
+                      <option>3 Months</option>
                     </select>
                   </div>
                 </div>
-              </div>
 
-              {/* Skills Section */}
-              <div className="border-t border-gray-100 pt-6">
-                <h3 className="text-sm font-bold text-gray-700 mb-1 border-l-4 border-[#00b4a0] pl-2 uppercase tracking-wider">Skills</h3>
-                <label className="block text-xs text-gray-400 mb-2">Add your key expertise, separated by commas</label>
-                <input
-                  type="text"
-                  value={professional.skills}
-                  onChange={(e) => setProfessional(prev => ({ ...prev, skills: e.target.value }))}
-                  placeholder="e.g. ECG, Cardiology, ICU Management, Patient Care"
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors"
-                />
-              </div>
-
-              {/* Bio Summary Section */}
-              <div className="border-t border-gray-100 pt-6">
-                <h3 className="text-sm font-bold text-gray-700 mb-2 border-l-4 border-[#00b4a0] pl-2 uppercase tracking-wider">Professional Summary</h3>
-                <textarea
-                  value={professional.bio}
-                  onChange={(e) => setProfessional(prev => ({ ...prev, bio: e.target.value }))}
-                  placeholder="Write a brief description..."
-                  rows={4}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors resize-none"
-                />
-              </div>
-
-              <div className="flex gap-4 pt-6 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => setIsEditMode(false)}
-                  className="flex-1 border border-gray-300 text-gray-600 font-semibold py-3.5 rounded-xl hover:bg-gray-50 transition-colors text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 bg-[#00b4a0] hover:bg-[#009888] text-white font-bold py-3.5 rounded-xl transition-colors shadow-md hover:shadow-lg text-sm"
-                >
-                  Update Profile Details
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Render Seeker Profile View Dashboard
-  if (profileSaved && !isEditMode) {
-    return renderProfileDashboard()
-  }
-
-  // Render Seeker Profile Unified Edit Form
-  if (profileSaved && isEditMode) {
-    return renderEditProfileForm()
-  }
-
-  // ── VIEW: Seeker Multi-Step Profile Wizard (For first time profile setup) ──
-  return (
-    <div className="min-h-screen bg-[#f0f5ff] pt-20">
-      {/* Header */}
-      <div className="hero-bg py-10 px-4">
-        <div className="max-w-3xl mx-auto flex flex-col items-center text-center">
-          <LogoBadge size="lg" inverted className="mb-5" />
-          <h1 className="text-3xl font-bold text-white mb-1">Complete Your Profile</h1>
-          <p className="text-white/70 text-sm">Help hospitals find you faster — fill in your medical credentials</p>
-        </div>
-      </div>
-
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        {/* Step indicators */}
-        <div className="flex items-center gap-1 mb-8">
-          {steps.map((s, i) => (
-            <div key={s.id} className="flex items-center flex-1">
-              <div className={`flex items-center gap-2 shrink-0 ${i <= stepIndex ? 'opacity-100' : 'opacity-40'}`}>
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all ${
-                  i < stepIndex ? 'bg-[#22c36a] border-[#22c36a] text-white'
-                  : i === stepIndex ? 'bg-[#00b4a0] border-[#00b4a0] text-white'
-                  : 'bg-white border-gray-200 text-gray-400'
-                }`}>
-                  {i < stepIndex ? '✓' : s.icon}
-                </div>
-                <span className={`hidden sm:block text-xs font-semibold ${i === stepIndex ? 'text-[#00b4a0]' : 'text-[#5a6a8a]'}`}>
-                  {s.label}
-                </span>
-              </div>
-              {i < steps.length - 1 && (
-                <div className={`flex-1 h-0.5 mx-2 rounded transition-all ${i < stepIndex ? 'bg-[#22c36a]' : 'bg-gray-200'}`} />
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Progress bar */}
-        <div className="h-2 bg-gray-200 rounded-full mb-8 overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-[#00b4a0] to-[#22c36a] rounded-full transition-all duration-500"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-
-        {/* ── STEP: Basic Info ── */}
-        {step === 'basic' && (
-          <div className="bg-white rounded-2xl p-7 shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold text-[#0d1b3e] mb-1">Basic Information</h2>
-            <p className="text-[#5a6a8a] text-sm mb-6">Tell us about yourself</p>
-
-            {/* Avatar upload */}
-            <div className="flex items-center gap-5 mb-7">
-              <div
-                className="w-20 h-20 rounded-full bg-[#f0f5ff] border-2 border-dashed border-[#00b4a0] flex items-center justify-center cursor-pointer overflow-hidden relative group"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {avatar ? (
-                  <img src={avatar} alt="avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="text-center">
-                    <div className="text-2xl">👤</div>
-                    <div className="text-[10px] text-[#00b4a0] mt-1">Upload</div>
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 rounded-full flex items-center justify-center transition-opacity">
-                  <span className="text-white text-xs">Change</span>
-                </div>
-              </div>
-              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
-              <div>
-                <p className="font-semibold text-[#0d1b3e] text-sm mb-1">Profile Photo</p>
-                <p className="text-[#5a6a8a] text-xs">JPG, PNG. Max 5MB. Clear, professional photo recommended.</p>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="mt-2 text-xs font-semibold text-[#00b4a0] hover:underline"
-                >
-                  Upload Photo
-                </button>
-              </div>
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-[#0d1b3e] mb-1.5">Full Name <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  value={basic.name}
-                  onChange={(e) => setBasic((p) => ({ ...p, name: e.target.value }))}
-                  placeholder="Dr. Rajesh Kumar"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#0d1b3e] mb-1.5">Email Address <span className="text-red-500">*</span></label>
-                <input
-                  type="email"
-                  value={basic.email}
-                  onChange={(e) => setBasic((p) => ({ ...p, email: e.target.value }))}
-                  placeholder="you@example.com"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#0d1b3e] mb-1.5">Phone Number</label>
-                <input
-                  type="tel"
-                  value={phone || '98765 43210'}
-                  readOnly
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50 text-gray-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#0d1b3e] mb-1.5">Date of Birth</label>
-                <input
-                  type="date"
-                  value={basic.dob}
-                  onChange={(e) => setBasic((p) => ({ ...p, dob: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#0d1b3e] mb-1.5">Gender</label>
-                <select
-                  value={basic.gender}
-                  onChange={(e) => setBasic((p) => ({ ...p, gender: e.target.value as any }))}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors text-gray-600 bg-white"
-                >
-                  <option value="not_specified">Prefer not to say</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#0d1b3e] mb-1.5">City <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  value={basic.city}
-                  onChange={(e) => setBasic((p) => ({ ...p, city: e.target.value }))}
-                  placeholder="Mumbai"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#0d1b3e] mb-1.5">State</label>
-                <select
-                  value={basic.state}
-                  onChange={(e) => setBasic((p) => ({ ...p, state: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors text-gray-600 bg-white"
-                >
-                  <option value="">Select State</option>
-                  {['Maharashtra', 'Delhi', 'Karnataka', 'Tamil Nadu', 'Telangana', 'Gujarat', 'Rajasthan', 'West Bengal', 'Uttar Pradesh', 'Punjab', 'Haryana', 'Kerala', 'Madhya Pradesh', 'Bihar'].map((s) => (
-                    <option key={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="flex justify-end mt-6 pt-5 border-t border-gray-100">
-              <button
-                onClick={() => basic.name && setStep('professional')}
-                disabled={!basic.name || !basic.city}
-                className="bg-[#0d2b6b] hover:bg-[#00b4a0] text-white font-bold px-8 py-3 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                Continue
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP: Professional Info ── */}
-        {step === 'professional' && (
-          <div className="bg-white rounded-2xl p-7 shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold text-[#0d1b3e] mb-1">Professional Details</h2>
-            <p className="text-[#5a6a8a] text-sm mb-6">Your medical credentials and experience</p>
-
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-[#0d1b3e] mb-1.5">Medical Specialty <span className="text-red-500">*</span></label>
-                <select
-                  value={professional.specialty}
-                  onChange={(e) => setProfessional((p) => ({ ...p, specialty: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors text-gray-600 bg-white"
-                >
-                  <option value="">Select Specialty</option>
-                  {['Doctor / Physician', 'Nurse', 'Pharmacist', 'Lab Technician', 'Radiologist', 'Physiotherapist', 'Dentist', 'Psychiatrist', 'Pediatrician', 'Emergency Medicine', 'Medical Administration', 'Allied Health'].map((s) => (
-                    <option key={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#0d1b3e] mb-1.5">Highest Qualification <span className="text-red-500">*</span></label>
-                <select
-                  value={professional.qualification}
-                  onChange={(e) => setProfessional((p) => ({ ...p, qualification: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors text-gray-600 bg-white"
-                >
-                  <option value="">Select Qualification</option>
-                  {['MBBS', 'MD', 'MS', 'DNB', 'GNM', 'B.Sc Nursing', 'M.Sc Nursing', 'B.Pharm', 'M.Pharm', 'BMLT', 'DMLT', 'BPT', 'MPT', 'BDS', 'MDS', 'BAMS', 'BHMS'].map((q) => (
-                    <option key={q}>{q}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#0d1b3e] mb-1.5">Years of Experience <span className="text-red-500">*</span></label>
-                <select
-                  value={professional.experience}
-                  onChange={(e) => setProfessional((p) => ({ ...p, experience: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors text-gray-600 bg-white"
-                >
-                  <option value="">Select Experience</option>
-                  <option>Fresher (0 years)</option>
-                  <option>1 year</option>
-                  <option>2–3 years</option>
-                  <option>4–6 years</option>
-                  <option>7–10 years</option>
-                  <option>10+ years</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#0d1b3e] mb-1.5">Current Role / Designation</label>
-                <input
-                  type="text"
-                  value={professional.currentRole}
-                  onChange={(e) => setProfessional((p) => ({ ...p, currentRole: e.target.value }))}
-                  placeholder="e.g. Senior Resident Doctor"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#0d1b3e] mb-1.5">Current Hospital / Institution</label>
-                <input
-                  type="text"
-                  value={professional.currentHospital}
-                  onChange={(e) => setProfessional((p) => ({ ...p, currentHospital: e.target.value }))}
-                  placeholder="e.g. Apollo Hospitals, Delhi"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#0d1b3e] mb-1.5">Medical Registration No.</label>
-                <input
-                  type="text"
-                  value={professional.registrationNumber}
-                  onChange={(e) => setProfessional((p) => ({ ...p, registrationNumber: e.target.value }))}
-                  placeholder="e.g. MH-12345"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors"
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-[#0d1b3e] mb-1.5">Registration Council</label>
-                <select
-                  value={professional.council}
-                  onChange={(e) => setProfessional((p) => ({ ...p, council: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors text-gray-600 bg-white"
-                >
-                  <option value="">Select Council</option>
-                  {['Medical Council of India (NMC)', 'Indian Nursing Council', 'Pharmacy Council of India', 'Dental Council of India', 'State Medical Council', 'Other'].map((c) => (
-                    <option key={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-[#0d1b3e] mb-1.5">Key Skills / Expertise</label>
-                <input
-                  type="text"
-                  value={professional.skills}
-                  onChange={(e) => setProfessional((p) => ({ ...p, skills: e.target.value }))}
-                  placeholder="e.g. Cardiac catheterization, ECHO, ECG, BCLS, ACLS..."
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors"
-                />
-                <p className="text-xs text-[#5a6a8a] mt-1">Comma-separated. These appear as tags on your profile.</p>
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-[#0d1b3e] mb-1.5">Professional Summary</label>
-                <textarea
-                  value={professional.bio}
-                  onChange={(e) => setProfessional((p) => ({ ...p, bio: e.target.value }))}
-                  placeholder="Brief description of your experience, achievements, and what makes you the right candidate..."
-                  rows={4}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#00b4a0] transition-colors resize-none"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-between mt-6 pt-5 border-t border-gray-100">
-              <button
-                onClick={() => setStep('basic')}
-                className="border-2 border-gray-200 text-gray-600 font-semibold px-6 py-3 rounded-xl hover:bg-gray-50 transition-all"
-              >
-                ← Back
-              </button>
-              <button
-                onClick={() => professional.specialty && setStep('resume')}
-                disabled={!professional.specialty || !professional.qualification}
-                className="bg-[#0d2b6b] hover:bg-[#00b4a0] text-white font-bold px-8 py-3 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                Continue →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP: Resume Upload ── */}
-        {step === 'resume' && (
-          <div className="bg-white rounded-2xl p-7 shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold text-[#0d1b3e] mb-1">Upload Your Resume</h2>
-            <p className="text-[#5a6a8a] text-sm mb-6">A strong resume gets you 3x more interview calls</p>
-
-            {/* Upload box */}
-            <div
-              onClick={() => resumeInputRef.current?.click()}
-              className={`relative border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 mb-6 ${
-                resumeUploaded
-                  ? 'border-[#22c36a] bg-green-50'
-                  : 'border-[#00b4a0] bg-[#f0f5ff] hover:bg-[#e8f0ff]'
-              }`}
-            >
-              <input
-                ref={resumeInputRef}
-                type="file"
-                accept=".pdf,.doc,.docx"
-                className="hidden"
-                onChange={handleResumeChange}
-              />
-              {resumeUploaded ? (
-                <>
-                  <div className="w-16 h-16 bg-[#22c36a] rounded-full flex items-center justify-center text-white text-3xl mx-auto mb-4 animate-bounce">
-                    ✓
-                  </div>
-                  <p className="font-bold text-[#22c36a] text-lg mb-1">Resume Uploaded!</p>
-                  <p className="text-[#5a6a8a] text-sm">{resumeFileName}</p>
-                  <p className="text-[#5a6a8a] text-xs mt-1">{resumeSize}</p>
+                <div className="flex justify-end pt-4 border-t border-gray-100">
                   <button
-                    onClick={(e) => { e.stopPropagation(); setResumeUploaded(false); }}
-                    className="mt-3 text-xs text-[#00b4a0] hover:underline"
+                    type="button"
+                    onClick={() => setStep('education')}
+                    className="bg-[#0d2b6b] hover:bg-[#00b4a0] text-white font-bold px-8 py-3 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer"
                   >
-                    Replace file
+                    Save and continue
                   </button>
-                </>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Education */}
+            {step === 'education' && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-base font-black text-[#0d1b3e]">Education Details</h3>
+                  <p className="text-xs text-gray-400">These details help recruiters identify your background</p>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Highest qualification</label>
+                    <input
+                      type="text"
+                      value={education.qualification}
+                      onChange={(e) => setEducation({ ...education, qualification: e.target.value })}
+                      placeholder="e.g. Graduation/Diploma"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Course</label>
+                    <input
+                      type="text"
+                      value={education.course}
+                      onChange={(e) => setEducation({ ...education, course: e.target.value })}
+                      placeholder="e.g. B.Tech / B.E."
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Course type</label>
+                    <select
+                      value={education.courseType}
+                      onChange={(e) => setEducation({ ...education, courseType: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors bg-white text-gray-700"
+                    >
+                      <option>Full Time</option>
+                      <option>Part Time</option>
+                      <option>Correspondence</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Specialization</label>
+                    <input
+                      type="text"
+                      value={education.specialization}
+                      onChange={(e) => setEducation({ ...education, specialization: e.target.value })}
+                      placeholder="e.g. Computer Science and Engineering (CSE)"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">University / Institute</label>
+                    <input
+                      type="text"
+                      value={education.university}
+                      onChange={(e) => setEducation({ ...education, university: e.target.value })}
+                      placeholder="e.g. Chandigarh University, Mohali"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Starting year</label>
+                      <input
+                        type="text"
+                        value={education.startYear}
+                        onChange={(e) => setEducation({ ...education, startYear: e.target.value })}
+                        placeholder="e.g. 2018"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Passing year</label>
+                      <input
+                        type="text"
+                        value={education.passYear}
+                        onChange={(e) => setEducation({ ...education, passYear: e.target.value })}
+                        placeholder="e.g. 2023"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-between pt-4 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setStep('employment')}
+                    className="border border-gray-200 hover:bg-gray-50 text-gray-600 font-bold px-6 py-3 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStep('preferences')}
+                    className="bg-[#0d2b6b] hover:bg-[#00b4a0] text-white font-bold px-8 py-3 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                  >
+                    Save and continue
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Headline & Preferences */}
+            {step === 'preferences' && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-base font-black text-[#0d1b3e]">Add Headline & Preferences</h3>
+                  <p className="text-xs text-gray-400">Make your profile stronger to get more relevant job recommendations</p>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Resume headline</label>
+                    <textarea
+                      value={preferences.headline}
+                      onChange={(e) => setPreferences({ ...preferences, headline: e.target.value })}
+                      placeholder="Enter resume headline..."
+                      rows={3}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors resize-none mb-2"
+                    />
+                    <div>
+                      <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wide mb-1.5">Suggestions:</p>
+                      <button
+                        type="button"
+                        onClick={() => setPreferences({
+                          ...preferences,
+                          headline: `Flutter Developer with B.Tech / B.E. in Computer Science and Engineering (CSE) currently living in Patna`
+                        })}
+                        className="text-left p-2.5 bg-gray-50 hover:bg-gray-100 rounded-xl text-[10px] text-gray-600 font-semibold border border-gray-100 cursor-pointer"
+                      >
+                        Flutter Developer with B.Tech / B.E. in Computer Science and Engineering (CSE) currently living in Patna
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Preferred work locations (Maximum 10)</label>
+                    <div className="flex flex-wrap gap-1.5 mb-2.5">
+                      {preferences.preferredLocations.map((loc) => (
+                        <span key={loc} className="bg-[#00b4a0]/10 text-[#00b4a0] border border-[#00b4a0]/20 text-[10px] font-black px-2.5 py-1 rounded-full flex items-center gap-1">
+                          {loc}
+                          <button
+                            type="button"
+                            onClick={() => setPreferences({
+                              ...preferences,
+                              preferredLocations: preferences.preferredLocations.filter(l => l !== loc)
+                            })}
+                            className="text-red-500 hover:text-red-700 font-bold text-xs"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                    
+                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wide mb-1.5">Suggestions:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {locationSuggestions.map((loc) => (
+                        <button
+                          key={loc}
+                          type="button"
+                          onClick={() => {
+                            if (!preferences.preferredLocations.includes(loc) && preferences.preferredLocations.length < 10) {
+                              setPreferences({
+                                ...preferences,
+                                preferredLocations: [...preferences.preferredLocations, loc]
+                              });
+                            }
+                          }}
+                          className="px-2.5 py-1 rounded-full text-[9px] font-bold bg-[#f0f5ff] hover:bg-blue-100 text-[#0d2b6b] border border-transparent cursor-pointer"
+                        >
+                          + {loc}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Preferred salary (per year)</label>
+                    <div className="flex gap-2">
+                      <span className="px-3 py-3 border border-gray-200 rounded-xl bg-gray-50 text-xs text-gray-500 font-bold flex items-center">
+                        ₹
+                      </span>
+                      <input
+                        type="text"
+                        value={preferences.preferredSalary}
+                        onChange={(e) => setPreferences({ ...preferences, preferredSalary: e.target.value })}
+                        placeholder="e.g. 5,64,000"
+                        className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0d2b6b] text-xs font-semibold outline-none transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Gender</label>
+                    <div className="flex gap-3">
+                      {['Male', 'Female', 'Transgender'].map((g) => (
+                        <button
+                          key={g}
+                          type="button"
+                          onClick={() => setPreferences({ ...preferences, gender: g })}
+                          className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                            preferences.gender === g
+                              ? 'bg-[#0d2b6b] text-white'
+                              : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                          }`}
+                        >
+                          {g}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-between pt-4 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setStep('education')}
+                    className="border border-gray-200 hover:bg-gray-50 text-gray-600 font-bold px-6 py-3 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleWizardSubmit}
+                    className="bg-[#22c36a] hover:bg-[#1aad5c] text-white font-bold px-10 py-3 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-md"
+                  >
+                    Submit Profile
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+        </div>
+      </div>
+    )
+  }
+
+  // ── VIEW: PROFILE DASHBOARD (OWN PROFILE VIEW) ──
+  return (
+    <div className="min-h-screen bg-[#f0f5ff] pt-28 pb-16">
+      <div className="max-w-6xl mx-auto px-4 grid md:grid-cols-3 gap-8">
+        
+        {/* Left Side: Avatar, Name & Contact info */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-xl text-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-[#0d2b6b] to-[#00b4a0]" />
+            
+            <div className="w-24 h-24 rounded-full bg-[#f0f5ff] border-4 border-blue-50 mx-auto flex items-center justify-center text-3xl shadow-sm mb-4">
+              👤
+            </div>
+
+            <div className="border-b border-gray-100 pb-4 mb-4">
+              {isEditingContact ? (
+                <div className="space-y-2 text-left">
+                  <input
+                    type="text"
+                    value={basic.name}
+                    onChange={(e) => setBasic({ ...basic, name: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl text-xs font-semibold"
+                  />
+                  <input
+                    type="email"
+                    value={basic.email}
+                    onChange={(e) => setBasic({ ...basic, email: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl text-xs font-semibold"
+                  />
+                  <button
+                    onClick={() => {
+                      setIsEditingContact(false)
+                      handleSaveToDb(basic)
+                    }}
+                    className="w-full bg-[#00b4a0] hover:bg-[#009888] text-white font-bold py-1.5 rounded-lg text-[10px] uppercase"
+                  >
+                    Save Changes
+                  </button>
+                </div>
               ) : (
                 <>
-                  <div className="w-16 h-16 bg-[#00b4a0]/10 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
-                    📄
-                  </div>
-                  <p className="font-bold text-[#0d1b3e] text-base mb-2">Drop your resume here</p>
-                  <p className="text-[#5a6a8a] text-sm mb-4">PDF, DOC, DOCX — Max 5MB</p>
-                  <span className="inline-block bg-[#0d2b6b] text-white text-sm font-semibold px-6 py-2.5 rounded-xl">
-                    Browse Files
-                  </span>
+                  <h2 className="text-lg font-black text-[#0d1b3e] flex items-center justify-center gap-1.5">
+                    {basic.name}
+                    <button onClick={() => setIsEditingContact(true)} className="text-gray-400 hover:text-[#00b4a0] text-xs">
+                      ✏️
+                    </button>
+                  </h2>
+                  <p className="text-[10px] bg-[#00b4a0]/15 text-[#00b4a0] font-black px-3 py-0.5 rounded-full inline-block mt-1 uppercase tracking-wider">Candidate</p>
                 </>
               )}
             </div>
 
-            {/* Tips */}
-            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6">
-              <h4 className="font-bold text-[#0d2b6b] text-sm mb-2">💡 Resume Tips for Healthcare Professionals</h4>
-              <ul className="text-[#5a6a8a] text-xs space-y-1.5">
-                <li>• Include your Medical Registration Number prominently</li>
-                <li>• List all certifications: BCLS, ACLS, NRP, etc.</li>
-                <li>• Mention your specializations and key procedures performed</li>
-                <li>• Include hospital affiliations and bed strengths</li>
-                <li>• Keep it 2 pages max — hiring managers scan quickly</li>
-              </ul>
-            </div>
-
-            <div className="flex justify-between mt-6 pt-5 border-t border-gray-100">
-              <button
-                onClick={() => setStep('professional')}
-                className="border-2 border-gray-200 text-gray-600 font-semibold px-6 py-3 rounded-xl hover:bg-gray-50 transition-all"
-              >
-                ← Back
-              </button>
-              <button
-                onClick={() => {
-                  handleSaveWizard()
-                  setStep('done')
-                }}
-                className="bg-[#0d2b6b] hover:bg-[#00b4a0] text-white font-bold px-8 py-3 rounded-xl transition-all flex items-center gap-2"
-              >
-                {resumeUploaded ? 'Complete Profile →' : 'Skip for Now →'}
-              </button>
+            <div className="text-left space-y-3 text-xs">
+              <div className="flex items-center gap-2 text-gray-500 font-semibold">
+                <span className="text-sm">📞</span>
+                <span>+91 {basic.phone}</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-500 font-semibold truncate">
+                <span className="text-sm">📧</span>
+                <span>{basic.email}</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-500 font-semibold">
+                <span className="text-sm">📍</span>
+                <span>{employment.city || 'Patna'}, Bihar</span>
+              </div>
             </div>
           </div>
-        )}
 
-        {/* ── STEP: Done ── */}
-        {step === 'done' && (
-          <div className="bg-white rounded-2xl p-10 shadow-sm border border-gray-100 text-center">
-            <div className="w-24 h-24 bg-[#22c36a] rounded-full flex items-center justify-center text-white text-5xl mx-auto mb-6 animate-bounce">
-              🎉
-            </div>
-            <h2 className="text-2xl font-bold text-[#0d1b3e] mb-3">Profile Complete!</h2>
-            <p className="text-[#5a6a8a] mb-2 text-sm max-w-md mx-auto">
-              Your 24medijobs profile is live. Hospitals and healthcare organizations can now discover you.
-            </p>
-            <p className="text-[#00b4a0] font-semibold text-sm mb-8">
-              You're now visible to 12,000+ hiring hospitals across India! 🏥
-            </p>
+          {/* Resume Card */}
+          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-xl">
+            <h3 className="text-xs font-black text-[#0d1b3e] uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center justify-between">
+              <span>📄 Candidate Resume</span>
+              {resumeUploaded && (
+                <span className="text-[#22c36a] text-[10px] font-black">ACTIVE</span>
+              )}
+            </h3>
 
-            {/* Profile completion bar */}
-            <div className="bg-[#f0f5ff] rounded-xl p-4 mb-8 text-left">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-[#0d1b3e] text-sm">Profile Completion</span>
-                <span className="font-bold text-[#00b4a0]">{resumeUploaded ? '92%' : '75%'}</span>
+            {resumeUploaded ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 bg-green-50/50 p-3 border border-green-100 rounded-2xl">
+                  <div className="text-2xl">📄</div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-bold text-gray-700 truncate">{resumeFileName}</p>
+                    <p className="text-[9px] text-gray-400">{resumeSize}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => resumeInputRef.current?.click()}
+                  className="w-full border border-[#00b4a0] text-[#00b4a0] hover:bg-[#00b4a0] hover:text-white font-bold py-2.5 rounded-xl text-[10px] uppercase tracking-wider transition-all cursor-pointer"
+                >
+                  Replace Resume
+                </button>
               </div>
-              <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-[#00b4a0] to-[#22c36a] rounded-full transition-all duration-1000"
-                  style={{ width: resumeUploaded ? '92%' : '75%' }}
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-xs text-gray-400 mb-3">No resume uploaded</p>
+                <button
+                  onClick={() => resumeInputRef.current?.click()}
+                  className="bg-[#00b4a0] hover:bg-[#009888] text-white font-bold px-4 py-2 rounded-xl text-[10px] uppercase tracking-wider cursor-pointer"
+                >
+                  Upload File
+                </button>
+              </div>
+            )}
+            <input ref={resumeInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleResumeChange} />
+          </div>
+        </div>
+
+        {/* Right Side: Editable Sections */}
+        <div className="md:col-span-2 space-y-6">
+          
+          {/* Resume Headline Section */}
+          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-xl relative">
+            <h3 className="text-xs font-black text-[#0d1b3e] uppercase tracking-wider mb-3 pb-2 border-b border-gray-100 flex justify-between items-center">
+              <span>📝 Resume Headline</span>
+              <button
+                onClick={() => setIsEditingHeadline(!isEditingHeadline)}
+                className="text-[#00b4a0] hover:underline text-[10px] font-bold uppercase cursor-pointer"
+              >
+                {isEditingHeadline ? 'Cancel' : 'Edit'}
+              </button>
+            </h3>
+
+            {isEditingHeadline ? (
+              <div className="space-y-3">
+                <textarea
+                  value={preferences.headline}
+                  onChange={(e) => setPreferences({ ...preferences, headline: e.target.value })}
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-xs font-semibold outline-none focus:border-[#0d2b6b] resize-none"
                 />
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => {
+                      setIsEditingHeadline(false)
+                      handleSaveToDb(basic, employment, education, preferences)
+                    }}
+                    className="bg-[#0d2b6b] hover:bg-[#00b4a0] text-white font-bold px-6 py-2 rounded-xl text-[10px] uppercase cursor-pointer"
+                  >
+                    Save Changes
+                  </button>
+                </div>
               </div>
-            </div>
-
-            <button
-              onClick={() => onNavigate('jobs')}
-              className="bg-[#0d2b6b] hover:bg-[#00b4a0] text-white font-bold px-10 py-4 rounded-xl transition-all text-lg shadow-lg"
-            >
-              Start Browsing Jobs →
-            </button>
+            ) : (
+              <p className="text-xs font-bold text-gray-600 leading-relaxed italic">
+                "{preferences.headline}"
+              </p>
+            )}
           </div>
-        )}
+
+          {/* Employment Details Section */}
+          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-xl">
+            <h3 className="text-xs font-black text-[#0d1b3e] uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex justify-between items-center">
+              <span>💼 Employment Profile</span>
+              <button
+                onClick={() => setIsEditingEmployment(!isEditingEmployment)}
+                className="text-[#00b4a0] hover:underline text-[10px] font-bold uppercase cursor-pointer"
+              >
+                {isEditingEmployment ? 'Cancel' : 'Edit'}
+              </button>
+            </h3>
+
+            {isEditingEmployment ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Company name</label>
+                  <input
+                    type="text"
+                    value={employment.companyName}
+                    onChange={(e) => setEmployment({ ...employment, companyName: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Job title</label>
+                  <input
+                    type="text"
+                    value={employment.jobTitle}
+                    onChange={(e) => setEmployment({ ...employment, jobTitle: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Work experience</label>
+                  <input
+                    type="text"
+                    value={employment.experienceYears}
+                    onChange={(e) => setEmployment({ ...employment, experienceYears: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Salary</label>
+                  <input
+                    type="text"
+                    value={employment.salary}
+                    onChange={(e) => setEmployment({ ...employment, salary: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Notice period</label>
+                  <input
+                    type="text"
+                    value={employment.noticePeriod}
+                    onChange={(e) => setEmployment({ ...employment, noticePeriod: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl text-xs font-semibold"
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => {
+                      setIsEditingEmployment(false)
+                      handleSaveToDb(basic, employment, education, preferences)
+                    }}
+                    className="bg-[#0d2b6b] hover:bg-[#00b4a0] text-white font-bold px-6 py-2 rounded-xl text-[10px] uppercase cursor-pointer"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <p className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">Current Employer</p>
+                  <p className="font-bold text-gray-700 mt-1">{employment.companyName || 'Not specified'}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">Designation</p>
+                  <p className="font-bold text-gray-700 mt-1">{employment.jobTitle || 'Not specified'}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">Experience</p>
+                  <p className="font-bold text-gray-700 mt-1">{employment.experienceYears}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">Current Salary</p>
+                  <p className="font-bold text-gray-700 mt-1">{employment.salary}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">Notice Period</p>
+                  <p className="font-bold text-gray-700 mt-1">{employment.noticePeriod}</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Education Details Section */}
+          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-xl">
+            <h3 className="text-xs font-black text-[#0d1b3e] uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex justify-between items-center">
+              <span>🎓 Education Background</span>
+              <button
+                onClick={() => setIsEditingEducation(!isEditingEducation)}
+                className="text-[#00b4a0] hover:underline text-[10px] font-bold uppercase cursor-pointer"
+              >
+                {isEditingEducation ? 'Cancel' : 'Edit'}
+              </button>
+            </h3>
+
+            {isEditingEducation ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Qualification</label>
+                  <input
+                    type="text"
+                    value={education.qualification}
+                    onChange={(e) => setEducation({ ...education, qualification: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Course</label>
+                  <input
+                    type="text"
+                    value={education.course}
+                    onChange={(e) => setEducation({ ...education, course: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Specialization</label>
+                  <input
+                    type="text"
+                    value={education.specialization}
+                    onChange={(e) => setEducation({ ...education, specialization: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">University / Institute</label>
+                  <input
+                    type="text"
+                    value={education.university}
+                    onChange={(e) => setEducation({ ...education, university: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl text-xs font-semibold"
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => {
+                      setIsEditingEducation(false)
+                      handleSaveToDb(basic, employment, education, preferences)
+                    }}
+                    className="bg-[#0d2b6b] hover:bg-[#00b4a0] text-white font-bold px-6 py-2 rounded-xl text-[10px] uppercase cursor-pointer"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <p className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">Highest Qualification</p>
+                  <p className="font-bold text-gray-700 mt-1">{education.qualification}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">Course / Specialization</p>
+                  <p className="font-bold text-gray-700 mt-1">{education.course} ({education.specialization})</p>
+                </div>
+                <div className="sm:col-span-2">
+                  <p className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">University / College</p>
+                  <p className="font-bold text-gray-700 mt-1">{education.university}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">Course Type</p>
+                  <p className="font-bold text-gray-700 mt-1">{education.courseType}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">Duration</p>
+                  <p className="font-bold text-gray-700 mt-1">{education.startYear} - {education.passYear}</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Preferences Section */}
+          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-xl">
+            <h3 className="text-xs font-black text-[#0d1b3e] uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex justify-between items-center">
+              <span>🎯 Job Preferences</span>
+              <button
+                onClick={() => setIsEditingPreferences(!isEditingPreferences)}
+                className="text-[#00b4a0] hover:underline text-[10px] font-bold uppercase cursor-pointer"
+              >
+                {isEditingPreferences ? 'Cancel' : 'Edit'}
+              </button>
+            </h3>
+
+            {isEditingPreferences ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Preferred Locations (Comma separated)</label>
+                  <input
+                    type="text"
+                    value={preferences.preferredLocations.join(', ')}
+                    onChange={(e) => setPreferences({ ...preferences, preferredLocations: e.target.value.split(',').map(s => s.trim()) })}
+                    className="w-full px-3 py-2 border rounded-xl text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Preferred Salary</label>
+                  <input
+                    type="text"
+                    value={preferences.preferredSalary}
+                    onChange={(e) => setPreferences({ ...preferences, preferredSalary: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl text-xs font-semibold"
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => {
+                      setIsEditingPreferences(false)
+                      handleSaveToDb(basic, employment, education, preferences)
+                    }}
+                    className="bg-[#0d2b6b] hover:bg-[#00b4a0] text-white font-bold px-6 py-2 rounded-xl text-[10px] uppercase cursor-pointer"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <p className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">Preferred work locations</p>
+                  <p className="font-bold text-gray-700 mt-1">{preferences.preferredLocations.join(', ')}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">Expected Salary</p>
+                  <p className="font-bold text-gray-700 mt-1">{preferences.preferredSalary}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">Gender</p>
+                  <p className="font-bold text-gray-700 mt-1">{preferences.gender}</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+        </div>
       </div>
     </div>
   )
