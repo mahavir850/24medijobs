@@ -2065,6 +2065,12 @@ export default function EmployerCTA({
   const [selectedPlan, setSelectedPlan] = useState<{ name: string; price: number } | null>(null);
 
   useEffect(() => {
+    if (initialStep === 'login') {
+      setSelectedPlan(null);
+    }
+  }, [initialStep]);
+
+  useEffect(() => {
     if (!employerProfile) {
       setCurrentPage(initialStep || 'pricing');
     } else if (currentPage === 'login' || currentPage === 'pricing' || currentPage === 'pay-now') {
